@@ -1,0 +1,123 @@
+
+import httpStatus from "http-status";
+import AppError from "../../../errors/AppError";
+import { TProject } from "./project-interface"
+import projectModel from "./project-model";
+import BitProjectModel from "../BitProject/BitProject.model";
+import { paymentHistoryModel, PaymentModel } from "../../basic_modules/payment/payment.model";
+import { providerFeedbackModel } from "../providerFeedback/providerModel";
+
+
+const createProjectDB = async (payload: TProject, email: string) => {
+    const isWallet = await PaymentModel.findOne({ customerEmail: email })
+    if (!isWallet) {
+        throw new AppError(httpStatus.PAYMENT_REQUIRED, 'Create a wallet account ')
+    }
+    if (isWallet.amount < 1) {
+        throw new AppError(httpStatus.NOT_EXTENDED, 'Insufficient balance ')
+    }
+    await PaymentModel.findOneAndUpdate(
+        { sessionId: "admin1234" },
+        {
+            $inc: { amount: -1 },
+        },
+        { new: true }
+    );
+    const project = await projectModel.create(payload);
+    return project
+}
+
+const myProjectDB = async (userId: string) => {
+    const projects: TProject[] = await projectModel.find({ userId: userId });
+    const expiredProjects = projects.filter(project => {
+        return project.expiredDate && new Date(project.expiredDate.toString()).getTime() < new Date().getTime();
+    });
+    const updatePayment = expiredProjects.map(project => {
+        if (project.expiredDate) {
+            project.payment = false;
+            return project.save();
+        }
+        return project;
+    });
+    await Promise.all(updatePayment);
+    return projects;
+};
+const bitProjectDB = async (projectId: string) => {
+    const project = await projectModel.findById(projectId);
+    if (!project) {
+        throw new AppError(httpStatus.NOT_FOUND, 'This project was not found!');
+    }
+
+    const bitProjects = await BitProjectModel.find({ projectId });
+    if (bitProjects.length === 0) {
+        throw new AppError(httpStatus.NOT_FOUND, 'No BitProjects found for this project!');
+    }
+    const bitProjectsWithRatings = await Promise.all(
+        bitProjects.map(async (bitProject) => {
+            const allFeedback = await providerFeedbackModel.find({ providerId: bitProject.providerId._id });
+            let totalRating = 0;
+            let totalFeedbackCount = 0;
+            if (allFeedback.length > 0) {
+                totalRating = allFeedback.reduce((acc, feedback) => acc + feedback.rating, 0);
+                totalFeedbackCount = allFeedback.length;
+            }
+
+            const averageRating = totalFeedbackCount > 0 ? (totalRating / totalFeedbackCount).toFixed(2) : '0.00';
+            return {
+                ...bitProject.toObject(),
+                totalRating,
+                averageRating
+            };
+        })
+    );
+
+    return bitProjectsWithRatings;
+};
+
+const boostProjctDB = async (projectId: string, email: string) => {
+    const project: any = await projectModel.findById(projectId)
+    if (!project) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Project not found !')
+    }
+    if (project.payment === true) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Allrade Boosted')
+    }
+    const isWallet = await PaymentModel.findOne({ customerEmail: email })
+    if (isWallet!.amount < 1) {
+        throw new AppError(httpStatus.NOT_EXTENDED, 'Insufficient balance ')
+    }
+    await PaymentModel.findOneAndUpdate(
+        { sessionId: "admin1234" },
+        {
+            $inc: { amount: -1 },
+        },
+        { new: true }
+    );
+    project.payment = true
+    project.expiredDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await project.save()
+    return project
+}
+const allProjectDB = async () => {
+    const project = await projectModel.find({ payment: true })
+
+    return project
+}
+const singleProjectDB = async (projectId: string) => {
+    const SingleProject = await projectModel.findById(projectId)
+
+    return SingleProject
+}
+
+
+
+export const projectService = {
+    createProjectDB,
+    myProjectDB,
+    bitProjectDB,
+    boostProjctDB,
+    allProjectDB,
+    singleProjectDB
+
+
+}

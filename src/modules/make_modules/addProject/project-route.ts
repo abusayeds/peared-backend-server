@@ -1,0 +1,23 @@
+import express from "express";
+import { authMiddleware } from "../../../middlewares/auth";
+import { projectController } from "./project-controller";
+
+import zodValidation from "../../../middlewares/zodValidationHandler";
+import { projectValidation } from "./project-validation";
+import { upload } from "../../../middlewares/fileUploadNormal";
+import { role } from "../../../utils/role";
+
+const router = express.Router();
+
+router.post("/create-project", authMiddleware(role.user), upload.single("image"), zodValidation(projectValidation), projectController.createProject);
+
+
+// project 
+router.get("/my-project", authMiddleware(role.user), projectController.myProject);
+router.get("/bit-project/:projectId", authMiddleware(role.user), projectController.bitProject);
+router.post("/boost-project/:projectId", authMiddleware(role.user), projectController.boostProject);
+
+router.get("/my-all-project", authMiddleware(role.provider), projectController.allProject);
+router.get("/single-project/:projectId", authMiddleware(role.provider), projectController.singleProject);
+
+export const projectRoutes = router;
