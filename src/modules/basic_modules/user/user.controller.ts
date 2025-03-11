@@ -1,7 +1,15 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response } from "express";
+import httpStatus from "http-status";
 import jwt from "jsonwebtoken";
+import { JWT_SECRET_KEY, } from "../../../config";
+import AppError from "../../../errors/AppError";
+import { tokenDecoded } from "../../../middlewares/decoded";
+import catchAsync from "../../../utils/catchAsync";
+import sendResponse from "../../../utils/sendResponse";
+import { paymentController } from "../payment/payment.controller";
+import { UserModel } from "./user.model";
 import {
   findUserById,
   generateToken,
@@ -9,14 +17,6 @@ import {
   userDelete,
   userService,
 } from "./user.service";
-import { UserModel } from "./user.model";
-import httpStatus from "http-status";
-import catchAsync from "../../../utils/catchAsync";
-import AppError from "../../../errors/AppError";
-import { JWT_SECRET_KEY, } from "../../../config";
-import sendResponse from "../../../utils/sendResponse";
-import { tokenDecoded } from "../../../middlewares/decoded";
-import { paymentController } from "../payment/payment.controller";
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.createUserDB(req.body)
   const responseData = {
@@ -33,21 +33,21 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const joinProvider = catchAsync(async (req: Request, res: Response) => {
-  const {email} =  req.body
-  const user =  await UserModel.findOne({email : email }) 
-    if (user) {
-      throw new AppError (400 , "You already have an account")
-    }
+  const { email } = req.body
+  const user = await UserModel.findOne({ email: email })
+  if (user) {
+    throw new AppError(400, "You already have an account")
+  }
   if (!req.body.service) {
     throw new AppError(httpStatus.BAD_REQUEST, "service is requred")
   } else {
     req.body.service = req.body.service.split(",")
   }
- 
-  if (req.body.service.length === 0) throw new AppError(400, "Service is Required")
-  const providerData = { ...req.body ,   role: 'provider' , }
 
-  const { url, } = await paymentController.createCheckoutSession(req.body.email, 30, providerData );
+  if (req.body.service.length === 0) throw new AppError(400, "Service is Required")
+  const providerData = { ...req.body, role: 'provider', }
+
+  const { url, } = await paymentController.createCheckoutSession(req.body.email, 30, providerData);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -90,8 +90,8 @@ const joinProvider = catchAsync(async (req: Request, res: Response) => {
 // });
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
-  
   const user = await userService.loginDB(req.body)
+
   const token = generateToken({ user: user });
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -125,7 +125,9 @@ const forgotPassword = catchAsync(async (req: Request, res: Response) => {
 
 const verifyForgotPasswordOTP = catchAsync(async (req: Request, res: Response) => {
   const { otp } = req.body;
-
+  if (!otp) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'otp is required')
+  }
   const { decoded }: any = await tokenDecoded(req, res)
   const email = decoded.email;
   const forgot = decoded.forgot
@@ -211,7 +213,7 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
 const updateUser = catchAsync(async (req: Request, res: Response) => {
   const { decoded, }: any = await tokenDecoded(req, res)
   const userId = decoded.user._id;
-  const result = await userService.updateUserDB( req.body,  userId)
+  const result = await userService.updateUserDB(req.body, userId)
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -242,6 +244,33 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     data: rersult
   });
 });
+const confirmProvider = catchAsync(async (req: Request, res: Response) => {
+  const rersult = await userService.confirmProviderDB(req.query)
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "provider list retrieved successfully",
+    data: rersult
+  });
+});
+const requestProvider = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.requestProviderDB(req.query)
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Pending provider list retrieved successfully",
+    data: result
+  });
+});
+const approveProvider = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.approveProviderDB(req.body)
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: ` ${result ? "Approve Provider successfully" : " Reject provider"} `,
+    data: result
+  });
+});
 
 
 export const userController = {
@@ -256,7 +285,9 @@ export const userController = {
   myProfile,
   getAllUsers,
   joinProvider,
-
+  requestProvider,
+  confirmProvider,
+  approveProvider
 }
 
 

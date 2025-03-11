@@ -2,10 +2,10 @@ import express from "express";
 import { authMiddleware } from "../../../middlewares/auth";
 import { projectController } from "./project-controller";
 
-import zodValidation from "../../../middlewares/zodValidationHandler";
-import { projectValidation } from "./project-validation";
 import { upload } from "../../../middlewares/fileUploadNormal";
+import zodValidation from "../../../middlewares/zodValidationHandler";
 import { role } from "../../../utils/role";
+import { projectValidation } from "./project-validation";
 
 const router = express.Router();
 

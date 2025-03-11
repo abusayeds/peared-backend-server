@@ -5,11 +5,7 @@ import { adminService } from "./admin.service";
 import { tokenDecoded } from "../../../middlewares/decoded";
 
 const adminDashboard = catchAsync(async (req, res) => {
-  const { decoded }: any = await tokenDecoded(req, res)
-    const email = decoded.user.email;
-    
-
-    const dashboard = await adminService.adminDashBoard(email)
+    const dashboard = await adminService.adminDashBoard()
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -17,6 +13,38 @@ const adminDashboard = catchAsync(async (req, res) => {
         data: dashboard
     });
 });
+const earnings = catchAsync(async (req, res) => {
+    const dashboard = await adminService.earningsDB()
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `Get earnings`,
+        data: dashboard
+    });
+});
+const adminIncome = catchAsync(async (req, res) => {
+    const year = Number(req.params.year)
+    const dashboard = await adminService.adminIncomeDB(year)
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `Get All income `,
+        data: dashboard
+    });
+});
+const adminTransaction = catchAsync(async (req, res) => {
+    const year = Number(req.params.year)
+    const dashboard = await adminService.adminTransactionDB(year)
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `Get All transaction `,
+        data: dashboard
+    });
+});
 export const adminController = {
-    adminDashboard
+    adminDashboard,
+    adminIncome,
+    adminTransaction,
+    earnings
 }

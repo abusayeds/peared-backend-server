@@ -1,13 +1,10 @@
+import { IAbout } from "./About.interface";
 import { AboutModel } from "./About.model";
 
-type AboutData = {
-  sanitizedContent: string;
-};
 
-export const createAboutInDB = async (aboutData: AboutData) => {
-  const newAbout = new AboutModel({ description: aboutData.sanitizedContent });
-  const savedAbout = await newAbout.save();
-  return savedAbout;
+export const createAboutInDB = async (payload: IAbout) => {
+  const crateAbout = AboutModel.create(payload);
+  return crateAbout;
 };
 
 export const getAllAboutFromDB = async () => {

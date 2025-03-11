@@ -11,8 +11,8 @@ class queryBuilder<T> {
     if (typeof searchTerm === 'string') {
       const keywords: string[] = searchTerm
         .trim()
-        .split(/\s+/) 
-        .filter(Boolean); 
+        .split(/\s+/)
+        .filter(Boolean);
       if (keywords.length > 0) {
         const andConditions = keywords.map((keyword: string) => ({
           $or: searchableFields.map((field: keyof T) => ({
@@ -34,7 +34,6 @@ class queryBuilder<T> {
     this.modelQuery = this?.modelQuery?.find(copyQuery as FilterQuery<T>);
     return this;
   }
-
   sort() {
     const sort =
       (this?.query?.sort as string)?.split(",")?.join(" ") || "-createdAt";
@@ -75,13 +74,13 @@ class queryBuilder<T> {
     limit,
   }: {
     totalData: number;
-    currentPage: number ;
+    currentPage: number;
     limit: number;
   }): {
     totalPage: number;
     currentPage: number;
-    prevPage: number 
-    nextPage: number 
+    prevPage: number
+    nextPage: number
     totalData: number;
   } {
     const totalPage = Math.ceil(totalData / limit) || 1;

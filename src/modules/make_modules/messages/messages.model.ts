@@ -5,7 +5,7 @@ const ConversationSchema = new Schema(
     {
       projectId: { type: Types.ObjectId, required: true, ref: "Project" },
       providerId: { type: Types.ObjectId, required: true, ref: "User" },
-      userId: { type: Types.ObjectId, required: true, ref: "User" },
+      userId: { type: Types.ObjectId, require: true, ref: "User" },
     },
     { timestamps: true }
   );

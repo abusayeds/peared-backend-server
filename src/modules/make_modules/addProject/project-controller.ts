@@ -1,20 +1,28 @@
 
 import httpStatus from "http-status";
+import { tokenDecoded } from "../../../middlewares/decoded";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
-import { tokenDecoded } from "../../../middlewares/decoded";
-import { projectService } from "./project-service";
+import { sendNotification } from "../../../utils/socket";
 import { paymentHistoryModel, PaymentModel } from "../../basic_modules/payment/payment.model";
+import { UserModel } from "../../basic_modules/user/user.model";
+import { projectService } from "./project-service";
 
 const createProject = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const userId = decoded.user._id;
     const email = decoded.user.email;
+    const name = decoded.user.name;
     const userWallet: any = await PaymentModel.findOne({ customerEmail: email })
     const adminWallet: any = await PaymentModel.findOne({ sessionId: 'admin123' })
     const projectData = { ...req.body, userId }
-
     const project = await projectService.createProjectDB(projectData, email)
+    const admin = await UserModel.findOne({ role: "admin" });
+
+    sendNotification({
+        userId: admin._id,
+        message: `${name} create a project !`,
+    });
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -28,6 +36,7 @@ const createProject = catchAsync(async (req, res) => {
     await paymentHistoryModel.create({
         historyName: `${project.projectName} project created.`,
         email: email,
+        admin: 'admin123',
         balance: 1,
         paymentType: "withdraw"
     })
@@ -36,7 +45,7 @@ const createProject = catchAsync(async (req, res) => {
 const myProject = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const userId = decoded.user._id;
-    const result = await projectService.myProjectDB(userId);
+    const result = await projectService.myProjectDB(userId, req.query);
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -75,13 +84,14 @@ const boostProject = catchAsync(async (req, res) => {
     await paymentHistoryModel.create({
         historyName: `${project.projectName} project Boosted.`,
         email: email,
+        admin: 'admin123',
         balance: 1,
         paymentType: "withdraw"
     })
 });
 
 const allProject = catchAsync(async (req, res) => {
-    const allProject = await projectService.allProjectDB()
+    const allProject = await projectService.allProjectDB(req.query)
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -90,7 +100,7 @@ const allProject = catchAsync(async (req, res) => {
     });
 });
 const singleProject = catchAsync(async (req, res) => {
-    const {projectId} = req.params
+    const { projectId } = req.params
     const allProject = await projectService.singleProjectDB(projectId)
     sendResponse(res, {
         statusCode: httpStatus.OK,

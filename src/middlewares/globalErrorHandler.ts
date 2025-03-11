@@ -2,15 +2,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
-import { TErrorSoureces } from "../interface/error";
-import hendleZodError from "../errors/handleZodError";
-import hendleMongooseValidationError from "../errors/handleValidationError";
+import { NODE_ENV } from "../config";
+import AppError from "../errors/AppError";
 import hendelCastError from "../errors/handleCastError";
 import handleDuplicateError from "../errors/handleDuplicateError";
-import AppError from "../errors/AppError";
-import { NODE_ENV } from "../config";
+import hendleMongooseValidationError from "../errors/handleValidationError";
+import hendleZodError from "../errors/handleZodError";
+import { TErrorSoureces } from "../interface/error";
 
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
+
   let statusCode = 500;
   let message = err.message || "something is wrong";
   let errorSources: TErrorSoureces = [

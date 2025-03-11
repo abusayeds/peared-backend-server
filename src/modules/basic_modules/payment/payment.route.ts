@@ -14,8 +14,7 @@ router.get("/my-payment-history", authMiddleware(role.user), paymentController.p
 
 router.post("/provider-withdraw", authMiddleware(role.provider), paymentController.providerWithdraw)
 
-router.post('/payByAdmin' , authMiddleware(role.provider) ,   )
+router.post('/payByAdmin', authMiddleware(role.provider),)
 
- 
 
 export const paymentRoutes = router;

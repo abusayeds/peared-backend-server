@@ -2,7 +2,7 @@ import { Document, Schema, Types } from "mongoose";
 
 export type IPayment = {
   sessionId: string;
-  projectId ? : any
+  projectId?: any
   customerEmail: string;
   amount: number;
   currency: string;
@@ -15,6 +15,7 @@ export type IPaymentResult = {
   transactionId: string;
   amount: number;
   userName: string;
+  admin: string
   subscriptionName: string;
   createdAt: string;
 };

@@ -9,8 +9,8 @@ import {
 import { authMiddleware } from "../../../middlewares/auth";
 
 const router = express.Router();
-router.post("/create", authMiddleware("admin"), createPrivacy);
+router.post("/create-privacy", authMiddleware("admin"), createPrivacy);
 router.get("/", getAllPrivacy);
-router.post("/update", updatePrivacy);
+router.post("/update-privacy", updatePrivacy);
 
 export const PrivacyRoutes = router;

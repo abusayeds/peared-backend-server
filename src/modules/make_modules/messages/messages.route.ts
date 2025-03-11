@@ -6,7 +6,7 @@ import { messageController } from "./messages.controller";
 
 const router = express.Router();
 
-router.get("/conversation/:conversationId", authMiddleware(role.user , role.provider      ), messageController.getConversation );
+router.get("/conversation/:conversationId", authMiddleware(role.user , role.provider ), messageController.getConversation );
 
 
 export const conversationRoutes = router;

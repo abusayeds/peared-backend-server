@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import bcrypt from "bcrypt";
 
-import jwt from "jsonwebtoken";
-import { IUser, } from "./user.interface";
-import { JWT_SECRET_KEY, } from "../../../config";
-import { OTPModel, UserModel } from "./user.model";
-import AppError from "../../../errors/AppError";
 import httpStatus from "http-status";
-import { sendEmail } from "./sendEmail";
+import jwt from "jsonwebtoken";
 import queryBuilder from "../../../builder/queryBuilder";
-import { providerFeedbackModel } from "../../make_modules/providerFeedback/providerModel";
+import { JWT_SECRET_KEY, } from "../../../config";
+import AppError from "../../../errors/AppError";
+import { sendEmail } from "./sendEmail";
+import { userSearchField } from "./user.conastant";
+import { IUser, } from "./user.interface";
+import { OTPModel, UserModel } from "./user.model";
 
 export const generateToken = (payload: any): string => {
   return jwt.sign(payload, JWT_SECRET_KEY as string, { expiresIn: "7d" });
@@ -66,7 +66,7 @@ const createUserDB = async (payload: IUser) => {
   return result
 }
 const joinProviderDB = async (payload: IUser) => {
- 
+
   const isUserRegistered = await UserModel.findOne({ email: payload.email });
   const { password, confirmPassword } = payload
   if (isUserRegistered) {
@@ -80,18 +80,18 @@ const joinProviderDB = async (payload: IUser) => {
   const result = await UserModel.create({
     ...payload,
     isApproved: false,
-  
   })
   return result
 }
 
 
-const loginDB = async (payload : any) => {
- 
-    
-   
-  const user = await findUserByEmail(payload.email);
+const loginDB = async (payload: any) => {
 
+
+  const user: any = await findUserByEmail(payload.email);
+  if (user?.isApproved === false) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Your request is awaiting admin approval.')
+  }
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND,
       "This account does not exist.",
@@ -125,7 +125,7 @@ const forgotPasswordDB = async (email: string) => {
   }
   const otp = generateOTP();
   await saveOTP(email, otp);
-    sendEmail(otp, email)
+  sendEmail(otp, email)
 }
 const verifyForgotPasswordOtpDB = async (otp: string, email: string) => {
   const otpRecord = await OTPModel.findOne({ email });
@@ -151,15 +151,11 @@ const verifyForgotPasswordOtpDB = async (otp: string, email: string) => {
 }
 
 const resendOtpDB = async (email: string) => {
-
   const newOTP = generateOTP();
   await saveOTP(email, newOTP);
   await sendEmail(newOTP, email,);
 }
-
 const resetPasswordDB = async (payload: any, email: string) => {
- 
-  
   const user = await findUserByEmail(email);
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND,
@@ -169,7 +165,7 @@ const resetPasswordDB = async (payload: any, email: string) => {
   if (payload.confirmPassword !== payload.password) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Passwords do not match');
   }
-  await UserModel.findOneAndUpdate({ email: email }, {password: payload.password}, { new: true });
+  await UserModel.findOneAndUpdate({ email: email }, { password: payload.password }, { new: true });
 }
 
 const changePasswordDB = async (payload: any, email: string) => {
@@ -179,8 +175,8 @@ const changePasswordDB = async (payload: any, email: string) => {
       "Please provide oldPassword, newPassword, and confirmPassword.",
     );
   }
-  console.log(email);
-  
+
+
   const user = await findUserByEmail(email);
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND,
@@ -202,7 +198,7 @@ const changePasswordDB = async (payload: any, email: string) => {
   await UserModel.findOneAndUpdate({ email: email }, { password: newPassword }, { new: true });
 }
 
-const updateUserDB = async (payload: IUser,  userId: string) => {
+const updateUserDB = async (payload: IUser, userId: string) => {
 
   const user = await findUserById(userId);
   if (!user) {
@@ -210,7 +206,7 @@ const updateUserDB = async (payload: IUser,  userId: string) => {
       "User not found.",
     );
   }
- 
+
   const result = await UserModel.findByIdAndUpdate(userId, { ...payload, }, { new: true });
   return result
 }
@@ -226,7 +222,7 @@ const myProfileDB = async (userId: string) => {
 
 }
 const allUserDB = async (query: Record<string, unknown>,) => {
-  const userQuery = new queryBuilder(UserModel.find({ role: "user" }), query).sort()
+  const userQuery = new queryBuilder(UserModel.find({ role: "user" }), query).search(userSearchField).search(userSearchField).filter().fields().sort()
   const { totalData } = await userQuery.paginate(UserModel.find({ role: "user" }))
   const user = await userQuery.modelQuery.exec()
   const currentPage = Number(query?.page) || 1;
@@ -238,27 +234,81 @@ const allUserDB = async (query: Record<string, unknown>,) => {
   });
   return { pagination, user, };
 }
-
-
-
-
-
-export const                        
-userService = {
-  createUserDB,
-  // verifyOtpDB
-  loginDB,
-  forgotPasswordDB,
-  verifyForgotPasswordOtpDB,
-  resendOtpDB,
-  resetPasswordDB,
-  changePasswordDB,
-  updateUserDB,
-  myProfileDB,
-  allUserDB,
-  joinProviderDB,
- 
+const confirmProviderDB = async (query: Record<string, unknown>,) => {
+  const providerQuery = new queryBuilder(UserModel.find({ role: "provider", isApproved: true }), query).search(userSearchField).sort()
+  const { totalData } = await providerQuery.paginate(UserModel.find({ role: "provider", isApproved: true }))
+  const provider = await providerQuery.modelQuery.exec()
+  const currentPage = Number(query?.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const pagination = providerQuery.calculatePagination({
+    totalData,
+    currentPage,
+    limit,
+  });
+  return { pagination, provider, };
 }
+const requestProviderDB = async (query: Record<string, unknown>,) => {
+  const providerQuery = new queryBuilder(UserModel.find({ role: "provider", isApproved: false }), query).search(userSearchField).sort()
+  const { totalData } = await providerQuery.paginate(UserModel.find({ role: "provider", isApproved: false }))
+  const provider = await providerQuery.modelQuery.exec()
+  const currentPage = Number(query?.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const pagination = providerQuery.calculatePagination({
+    totalData,
+    currentPage,
+    limit,
+  });
+  return { pagination, provider, };
+}
+const approveProviderDB = async (payload: any) => {
+
+  const provider = await UserModel.findById(payload.providerId)
+  if (!provider) {
+    throw new AppError(httpStatus.NOT_FOUND,
+      "User not found.",
+    );
+  }
+  if (payload.isApprove === true) {
+    provider.isApproved = true
+    await provider.save()
+    console.log(provider, 'true log');
+    return true
+
+
+  }
+
+  if (!payload.isApprovee) {
+    await UserModel.findByIdAndDelete(payload.providerId)
+    return false
+  }
+
+}
+
+
+
+
+
+
+
+export const
+  userService = {
+    createUserDB,
+    // verifyOtpDB
+    loginDB,
+    forgotPasswordDB,
+    verifyForgotPasswordOtpDB,
+    resendOtpDB,
+    resetPasswordDB,
+    changePasswordDB,
+    updateUserDB,
+    myProfileDB,
+    allUserDB,
+    joinProviderDB,
+    requestProviderDB,
+    confirmProviderDB,
+    approveProviderDB
+
+  }
 
 
 

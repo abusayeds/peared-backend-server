@@ -1,6 +1,5 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
-const mongoose = require('mongoose');
 
 const providerSchema = new mongoose.Schema({
   providerId: {
@@ -14,11 +13,11 @@ const providerSchema = new mongoose.Schema({
   },
   action: {
     type: String,
-    enum: ['withdraw', 'paid'], 
-    default : 'withdraw'
+    enum: ['withdraw', 'paid'],
+    default: 'withdraw'
   }
 }, {
-  timestamps: true 
+  timestamps: true
 });
 
 export const withdrawModel = mongoose.model('withdraw', providerSchema);

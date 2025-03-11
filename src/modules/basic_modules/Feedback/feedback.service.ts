@@ -33,20 +33,19 @@ export const feedbackList = async (
   if (email) {
     query.email = { $regex: email, $options: "i" };
   }
-  // Date filtering logic
+
   if (date) {
-    // Parse the input date (DD-MM-YYYY)
+
     const [day, month, year] = date.split("-").map(Number);
 
-    // Create start and end Date objects
-    const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0)); // Start of the day (00:00:00 UTC)
-    const endDate = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, -1)); // End of the day (23:59:59 UTC)
 
-    // Add date filter to query
+    const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, -1));
+
+
     query.createdAt = { $gte: startDate, $lte: endDate };
   }
 
-  // Query for promo codes with pagination and filtering
   const feedbacks = await FeedbackModel.aggregate<IFeedback>([
     { $match: query },
     {
@@ -62,21 +61,20 @@ export const feedbackList = async (
     {
       $project: {
         serial: 1,
-        // Include the serial field
-        rating: 1, // Include coupon code
+        rating: 1,
         email: 1,
         enjoy: 1,
         heard: 1,
         name: 1,
-        feedback: 1, // Include status and duration
-        createdAt: 1, // Include createdAt field
+        feedback: 1,
+        createdAt: 1,
       },
     },
-    { $skip: skip }, // Skipping records for pagination
-    { $limit: limit }, // Limiting the number of records per page
+    { $skip: skip },
+    { $limit: limit },
   ]);
 
-  // Get the total number of promo codes for calculating total pages
+
   const totalFeedbacks = await FeedbackModel.countDocuments(query);
   const totalPages = Math.ceil(totalFeedbacks / limit);
 

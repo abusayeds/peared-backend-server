@@ -49,6 +49,10 @@ const paymentHistorySchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    admin: {
+      type: String,
+      required: false,
+    },
     email: {
       type: String,
       required: true,
@@ -64,4 +68,4 @@ const paymentHistorySchema = new mongoose.Schema(
   },
 );
 
-export const paymentHistoryModel =  mongoose.model("PaymentHistory", paymentHistorySchema);
+export const paymentHistoryModel = mongoose.model("PaymentHistory", paymentHistorySchema);

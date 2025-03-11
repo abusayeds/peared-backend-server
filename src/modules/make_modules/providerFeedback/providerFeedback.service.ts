@@ -41,7 +41,7 @@ const myReviewDB = async (query: Record<string, unknown>, providerId: string) =>
     });
     return { pagination, data, };
 }
-const topReviewsDB = async ( providerId: string) => {
+const topReviewsDB = async (providerId: string) => {
     const provider = await UserModel.findById(providerId)
     if (!provider) {
         throw new AppError(httpStatus.NOT_FOUND,
@@ -49,19 +49,50 @@ const topReviewsDB = async ( providerId: string) => {
         );
     }
     const reviews = await providerFeedbackModel.find({
-        isFavourite : true,
-        providerId : provider
+        isFavourite: true,
+        providerId: provider
     }).populate({
         path: "userId",
         select: "image",
     })
-   
- return reviews
-  
+
+    return reviews
+
+}
+const avarageReviewsDB = async (providerId: string) => {
+    const provider = await UserModel.findById(providerId)
+    if (!provider) {
+        throw new AppError(httpStatus.NOT_FOUND,
+            "Provider not found.",
+        );
+    }
+    const allFeedback = await providerFeedbackModel.find({ providerId: providerId });
+    const totalRating = allFeedback.reduce((acc, feedback) => acc + feedback.rating, 0);
+    const averageRating = allFeedback.length > 0 ? totalRating / allFeedback.length : 0;
+    const ratingCount = allFeedback.reduce((acc: any, feedback) => {
+        acc[feedback.rating] = (acc[feedback.rating] || 0) + 1;
+        return acc;
+    }, {});
+    const ratingResponse = {
+        averageRating: averageRating.toFixed(1),
+        ratingDistribution: {
+            5: ratingCount[5] || 0,
+            4: ratingCount[4] || 0,
+            3: ratingCount[3] || 0,
+            2: ratingCount[2] || 0,
+            1: ratingCount[1] || 0,
+        },
+        totalReviews: allFeedback.length,
+        // feedback: allFeedback.map((feedback) => ({
+        //     rating: feedback.rating,
+        //     details: feedback.details,
+        // })),
+    };
+    return ratingResponse
 }
 const IsfavouriteDB = async (payload: any, providerId: string) => {
-    console.log(payload);
-    
+
+
     const provider = await UserModel.findById(providerId)
     if (!provider) {
         throw new AppError(httpStatus.NOT_FOUND,
@@ -93,13 +124,12 @@ const IsfavouriteDB = async (payload: any, providerId: string) => {
         { isFavourite: payload.isFavourite },
         { new: true }
     );
-
     return review
-
 }
 export const providerFeedbackService = {
     createProviderFeedbackDB,
     myReviewDB,
     IsfavouriteDB,
-    topReviewsDB
+    topReviewsDB,
+    avarageReviewsDB
 } 

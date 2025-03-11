@@ -29,24 +29,24 @@ const UserSchema = new Schema<IUser>(
     },
     address: { type: String, trim: true, required: false },
     city: { type: String, trim: true, required: false },
-    image: { type: String, trim: true, default: "public/images/user.png", required: false },
+    image: { type: String, trim: true, default: "", required: false },
 
     certificate: {
       type: [String], trim: true, required: false, default: undefined
     },
-    postalCode : {
-      type : String , 
-      required : false
+    postalCode: {
+      type: String,
+      required: false
     },
     role: {
       type: String,
       enum: ["admin", "user", "provider"],
       default: "user",
     },
-     accountId : {
-      type : String , 
-      default : null
-     },
+    accountId: {
+      type: String,
+      default: null
+    },
     status: {
       type: String,
       enum: ["active", "blocked"],
@@ -54,12 +54,11 @@ const UserSchema = new Schema<IUser>(
     },
     service: {
       type: [String], trim: true, required: false,
-      enum: ["Residential Cleaning", "Commercial Cleaning", "Painting", "Landscaping", "Carpentry"],
       default: undefined
     },
-    isApproved :   {
-       type  :Boolean ,   required: false, default: undefined
-    }, 
+    isApproved: {
+      type: Boolean, required: false, default: undefined
+    },
     isDeleted: {
       type: Boolean,
       default: false,

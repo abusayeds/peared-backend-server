@@ -30,10 +30,7 @@ const singleProjectDB = async (projectId: string) => {
     }
     const allFeedback = await providerFeedbackModel.find({ providerId: bitProject?.providerId._id });
     const totalRating = allFeedback.reduce((acc, feedback) => acc + feedback.rating, 0);
-
-
     const averageRating = allFeedback.length > 0 ? totalRating / allFeedback.length : 0;
-
     const ratingCount = allFeedback.reduce((acc: any, feedback) => {
         acc[feedback.rating] = (acc[feedback.rating] || 0) + 1;
         return acc;
@@ -57,10 +54,7 @@ const singleProjectDB = async (projectId: string) => {
             1: ratingCount[1] || 0,
         },
         totalReviews: allFeedback.length,
-        // feedback: allFeedback.map((feedback) => ({
-        //     rating: feedback.rating,
-        //     details: feedback.details,
-        // })),
+
     };
 
     return ratingResponse;
@@ -73,12 +67,12 @@ const bitProjectApprovedDB = async (bitProjectId: string, email: string) => {
     const bitProject: any = await BitProjectModel.findById(bitProjectId).populate({
         path: "projectId",
         select: "projectName ",
-    }) 
-     if(!bitProject){
+    })
+    if (!bitProject) {
         throw new AppError(httpStatus.NOT_FOUND, "Project not found");
-     }
-   console.log( bitProject);
-   
+    }
+
+
     const isbit = await BitProjectModel.findOne({
         projectId: bitProject.projectId._id,
         isComplete: "running"
@@ -105,13 +99,6 @@ const bitProjectApprovedDB = async (bitProjectId: string, email: string) => {
         throw new AppError(httpStatus.NOT_EXTENDED, 'Insufficient balance ')
     }
     isWallet.amount -= bitProject.price;
-    await PaymentModel.findOneAndUpdate(
-        { sessionId: "admin1234" },
-        {
-            $inc: { amount: -bitProject.price },
-        },
-        { new: true }
-    );
     project.isApprove = true
     bitProject.isComplete = 'running'
     await project.save()
@@ -128,57 +115,36 @@ const bitProjectApprovedDB = async (bitProjectId: string, email: string) => {
 };
 
 const confirmProjectDB = async (projectId: string) => {
-    const currentProjects : any = await BitProjectModel.findOne({
+    const currentProjects: any = await BitProjectModel.findOne({
         projectId: projectId,
     }).populate({
         path: "projectId",
-        select: "userId ",
+        select: "userId projectCategory projectName street city postCode image ",
     }).populate({
         path: "providerId",
         select: "name image",
     })
-    const conversation : any = await conversationModel.findOne({
+    const user = await UserModel.findById(currentProjects.projectId.userId)
+    const conversation: any = await conversationModel.findOne({
         projectId: projectId,
         providerId: currentProjects.providerId,
         userId: currentProjects.projectId.userId
     })
     return {
-        currentProjects , 
-        conversationId : conversation._id
+        currentProjects,
+        conversationId: conversation._id,
+        userName: user.name,
+        userImage: user.image
     }
 }
-// const confirmProjectDB = async (projectId: string) => {
-//     const currentProjects = await BitProjectModel.findOne({
-//         projectId: projectId,
-//     }).populate({
-//         path: "projectId",
-//         select: "userId ",
-//     })
-//     return currentProjects
-// }
-// const confirmProjectDB = async (projectId: string) => {
-//     const currentProjects: any = await BitProjectModel.findOne({
-//         projectId: projectId,
-//     }).populate({
-//         path: "projectId",
-//         select: "userId ",
-//     })
 
-  
-       
-
-       
-    
-   
-
-// }
 const currentProjectsDB = async (providerId: string) => {
     const currentProjects = await BitProjectModel.find({
         isComplete: 'running',
         providerId: providerId,
     }).populate({
         path: "projectId",
-        select: "projectCategory street postCode ",
+        select: "projectCategory street postCode image",
     })
     return currentProjects
 }
@@ -188,7 +154,7 @@ const pendingsBitsDB = async (providerId: string) => {
         providerId: providerId,
     }).populate({
         path: "projectId",
-        select: "projectCategory street postCode ",
+        select: "projectCategory street postCode image ",
     })
     return pendingsBits
 }
@@ -220,7 +186,7 @@ const ProjectNotOkDB = async (bitProjectId: string, userId: string) => {
     await currentProjects.save()
     return null
 }
-const    ProjectOkByUserDB = async (bitProjectId: string, userId: string,) => {
+const ProjectOkByUserDB = async (bitProjectId: string, userId: string,) => {
     const currentProjects = await BitProjectModel.findById(bitProjectId);
     if (!currentProjects) {
         throw new AppError(httpStatus.NOT_FOUND, 'Project not found');

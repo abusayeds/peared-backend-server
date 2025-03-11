@@ -1,13 +1,11 @@
-import { paymentController } from './../modules/basic_modules/payment/payment.controller';
 import { PaymentModel } from "../modules/basic_modules/payment/payment.model";
 import { UserModel } from "../modules/basic_modules/user/user.model";
-import { create } from 'domain';
 
 
 const admin = {
   name: "MD Admin",
   email: "admin@gmail.com",
-  password: "1qazxsw2",
+  password: "123456",
   role: "admin",
   isDeleted: false,
 };

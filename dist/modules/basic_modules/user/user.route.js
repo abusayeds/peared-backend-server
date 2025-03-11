@@ -1,0 +1,32 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const user_controller_1 = require("./user.controller");
+const user_validation_1 = require("./user.validation");
+const zodValidationHandler_1 = __importDefault(require("../../../middlewares/zodValidationHandler"));
+const auth_1 = require("../../../middlewares/auth");
+const role_1 = require("../../../utils/role");
+const pdfFileUpload_1 = __importDefault(require("../../../middlewares/pdfFileUpload"));
+const router = express_1.default.Router();
+router.post("/register", (0, zodValidationHandler_1.default)(user_validation_1.userValidation.registerUserValidation), user_controller_1.userController.registerUser);
+router.post("/join-provider", pdfFileUpload_1.default, (0, zodValidationHandler_1.default)(user_validation_1.userValidation.joinProviderValidation), user_controller_1.userController.joinProvider);
+router.post("/login", (0, zodValidationHandler_1.default)(user_validation_1.userValidation.loginValidation), user_controller_1.userController.loginUser);
+router.post("/forget-password", user_controller_1.userController.forgotPassword);
+router.post("/verify-forget-otp", user_controller_1.userController.verifyForgotPasswordOTP);
+router.post("/resend", user_controller_1.userController.resendOTP);
+router.post("/reset-password", (0, zodValidationHandler_1.default)(user_validation_1.userValidation.resetPassWordValidation), user_controller_1.userController.resetPassword);
+router.post("/change-password", (0, auth_1.authMiddleware)(role_1.role.user, role_1.role.provider, role_1.role.admin), user_controller_1.userController.changePassword);
+router.post("/update", pdfFileUpload_1.default, user_controller_1.userController.updateUser);
+router.get("/my-profile", user_controller_1.userController.myProfile);
+router.get("/all-user", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.userController.getAllUsers);
+router.post("/block-user", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.BlockUser);
+router.post("/delete", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.deleteUser);
+// req provider
+router.get("/request-provider", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.userController.requestProvider);
+router.get("/confirm-provider", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.userController.confirmProvider);
+router.post("/approve-provider", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.userController.approveProvider);
+exports.UserRoutes = router;

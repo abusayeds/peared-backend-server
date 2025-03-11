@@ -1,11 +1,14 @@
 
 import httpStatus from "http-status";
+import queryBuilder from "../../../builder/queryBuilder";
 import AppError from "../../../errors/AppError";
-import { TProject } from "./project-interface"
-import projectModel from "./project-model";
+import { PaymentModel } from "../../basic_modules/payment/payment.model";
 import BitProjectModel from "../BitProject/BitProject.model";
-import { paymentHistoryModel, PaymentModel } from "../../basic_modules/payment/payment.model";
 import { providerFeedbackModel } from "../providerFeedback/providerModel";
+import { searchProject } from "./project-constant";
+import { TProject } from "./project-interface";
+import projectModel from "./project-model";
+
 
 
 const createProjectDB = async (payload: TProject, email: string) => {
@@ -27,8 +30,11 @@ const createProjectDB = async (payload: TProject, email: string) => {
     return project
 }
 
-const myProjectDB = async (userId: string) => {
-    const projects: TProject[] = await projectModel.find({ userId: userId });
+const myProjectDB = async (userId: string, query: Record<string, unknown>) => {
+    const projectQuery = new queryBuilder(projectModel.find({ userId: userId }), query).sort()
+    const { totalData } = await projectQuery.paginate(projectModel.find({ userId: userId }))
+    const projects = await projectQuery.modelQuery.exec()
+    // const projects: TProject[] = await projectModel.find({ userId: userId });
     const expiredProjects = projects.filter(project => {
         return project.expiredDate && new Date(project.expiredDate.toString()).getTime() < new Date().getTime();
     });
@@ -40,7 +46,16 @@ const myProjectDB = async (userId: string) => {
         return project;
     });
     await Promise.all(updatePayment);
-    return projects;
+    const currentPage = Number(query?.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const pagination = projectQuery.calculatePagination({
+        totalData,
+        currentPage,
+        limit,
+    });
+
+    return { pagination, projects }
+
 };
 const bitProjectDB = async (projectId: string) => {
     const project = await projectModel.findById(projectId);
@@ -98,10 +113,18 @@ const boostProjctDB = async (projectId: string, email: string) => {
     await project.save()
     return project
 }
-const allProjectDB = async () => {
-    const project = await projectModel.find({ payment: true })
-
-    return project
+const allProjectDB = async (query: Record<string, unknown>) => {
+    const projectQuery = new queryBuilder(projectModel.find({ payment: true }), query).search(searchProject).filter().sort()
+    const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true }))
+    const project = await projectQuery.modelQuery.exec()
+    const currentPage = Number(query?.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const pagination = projectQuery.calculatePagination({
+        totalData,
+        currentPage,
+        limit,
+    });
+    return { pagination, project }
 }
 const singleProjectDB = async (projectId: string) => {
     const SingleProject = await projectModel.findById(projectId)

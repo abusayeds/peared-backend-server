@@ -28,8 +28,8 @@ const createCheckoutSession = async (customerEmail: string, amount: number, proj
       quantity: 1,
     }],
     customer_email: customerEmail,
-    success_url: `http://10.0.80.100:3000/paymentSuccess`,
-    cancel_url: `https://yourdomain.com/payment-cancel`,
+    success_url: `https://peared-client.vercel.app/paymentSuccess`,
+    cancel_url: `https://peared-client.vercel.app/payment-cancel`,
     metadata: {
       customerEmail,
       amount: amount,
@@ -50,7 +50,7 @@ const webhookController = async (req: Request, res: Response) => {
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
 
     await webhookService.processWebhookEvent(event);
-    
+
   } catch (err: any) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
@@ -72,7 +72,7 @@ const addBalance = catchAsync(
       throw new AppError(httpStatus.NOT_FOUND, "User Not Found ! ");
 
     }
-    const { url } = await createCheckoutSession(email, amount , user )
+    const { url } = await createCheckoutSession(email, amount, user)
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
@@ -81,56 +81,55 @@ const addBalance = catchAsync(
     });
 
   })
-  const myWallat = catchAsync(async (req, res) => {
-    const { decoded }: any = await tokenDecoded(req, res)
-    const email = decoded.user.email;
-    const result = await webhookService.myWallatDB(email)
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: ' recived my wallat',
-        data: result
-    });
-
-});
-  const paymentHistory = catchAsync(async (req, res) => {
-    const { decoded }: any = await tokenDecoded(req, res)
-    const email = decoded.user.email;
-    const paymentHistory = await webhookService.paymentHistoryDB(email)
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: ' recived my payment history',
-        data: paymentHistory
-    });
-
-});
-
-
-
-
-
-
-
- const providerWithdraw = catchAsync(async (req, res) => {
+const myWallat = catchAsync(async (req, res) => {
   const { decoded }: any = await tokenDecoded(req, res)
-    const email = decoded.user.email;
-    if (
-      req.body.amount === undefined ||  
-      req.body.amount <= 0 ||  
-      !Number.isInteger(req.body.amount)  
+  const email = decoded.user.email;
+  const result = await webhookService.myWallatDB(email)
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: ' recived my wallat',
+    data: result
+  });
+
+});
+const paymentHistory = catchAsync(async (req, res) => {
+  const { decoded }: any = await tokenDecoded(req, res)
+  const email = decoded.user.email;
+  const paymentHistory = await webhookService.paymentHistoryDB(email)
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: ' recived my payment history',
+    data: paymentHistory
+  });
+
+});
+
+
+
+
+
+
+
+const providerWithdraw = catchAsync(async (req, res) => {
+  const { decoded }: any = await tokenDecoded(req, res)
+  const email = decoded.user.email;
+  if (
+    req.body.amount === undefined ||
+    req.body.amount <= 0 ||
+    !Number.isInteger(req.body.amount)
   ) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Amount is required, must be greater than 0, and should be an integer.');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Amount is required, must be greater than 0, and should be an integer.');
   }
-  
-    const url = await webhookService.providerWithdrawDB( req.body,  email)
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: ' writhdraw kaj choltaca ',
-        data: url
-    });
- })
+  const data = await webhookService.providerWithdrawDB(req.body, email)
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: ' writhdraw request sent ! ',
+    data: data
+  });
+})
 
 
 

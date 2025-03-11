@@ -1,13 +1,12 @@
 
-import { cmp } from "semver";
+import httpStatus from "http-status";
 import AppError from "../../../errors/AppError";
+import { withdrawModel } from "../../make_modules/withdraw/withdraw.model";
 import { UserModel } from "../user/user.model";
 import { userService } from "../user/user.service";
 import { checkPaymentStatusFromStripe } from "./payment.constant";
 import { stripe } from "./payment.controller";
 import { paymentHistoryModel, PaymentModel } from "./payment.model";
-import { withdrawModel } from "../../make_modules/withdraw/withdraw.model";
-import httpStatus from "http-status";
 
 
 const webhookHandlers: { [key: string]: Function[] } = {
@@ -59,6 +58,7 @@ async function processPayment(event: any) {
             await paymentHistoryModel.create({
                 historyName: 'Add balance',
                 email: session.metadata.customerEmail,
+                admin: 'admin1234',
                 balance: session.metadata.amount,
                 paymentType: "deposit"
             })
@@ -77,6 +77,7 @@ async function joinProvider(event: any) {
 
     }
     try {
+
         await PaymentModel.findOneAndUpdate(
             { sessionId: "admin123" },
             {
@@ -85,6 +86,13 @@ async function joinProvider(event: any) {
             { new: true }
         );
         const projectData = JSON.parse(session.metadata.projectData);
+        await paymentHistoryModel.create({
+            historyName: `${projectData.name}  join`,
+            email: projectData.email,
+            admin: 'admin123',
+            balance: session.metadata.amount,
+            paymentType: "deposit"
+        })
         await userService.joinProviderDB(projectData);
 
     } catch (error) {
@@ -108,19 +116,16 @@ const paymentHistoryDB = async (email: string) => {
 
 
 const providerWithdrawDB = async (payload: any, providerEmail: string) => {
-
     const wallet: any | null = await PaymentModel.findOne({
         customerEmail: providerEmail
-      });
-    
-      
-      if (!wallet) {
+    });
+    if (!wallet) {
         throw new AppError(httpStatus.NOT_FOUND, 'Provider wallet not found');
-      }
-    
-      if (wallet.amount < payload.amount) {
+    }
+
+    if (wallet.amount < payload.amount) {
         throw new AppError(httpStatus.NOT_EXTENDED, `Insufficient balance. Available balance: ${wallet.amount}`);
-      }
+    }
 
     let provider = await UserModel.findOne({ email: providerEmail });
     if (!provider?.accountId) {
@@ -128,33 +133,33 @@ const providerWithdrawDB = async (payload: any, providerEmail: string) => {
             type: 'express',
             email: provider?.email,
         });
-
         provider = await UserModel.findOneAndUpdate(
-            { email: providerEmail }, 
-            { accountId: account.id }, 
+            { email: providerEmail },
+            { accountId: account.id },
             { new: true }
         );
     }
     const accountInfo = await stripe.accounts.retrieve(provider.accountId);
     if (!accountInfo.capabilities || accountInfo.capabilities.transfers !== 'active') {
-    
+
         const accountLink = await stripe.accountLinks.create({
             account: provider.accountId,
             refresh_url: `https://yourdomain.com/payment-cancel`,
             return_url: `https://yourdomain.com/payment-cancel`,
             type: 'account_onboarding',
         });
-      
-        
         return { url: accountLink.url };
     }
 
     await withdrawModel.create({
-        providerId : provider._id, 
-        amount : payload.amount,
+        providerId: provider._id,
+        amount: payload.amount,
     })
-
-
+    // await PaymentModel.findOneAndUpdate(
+    //     { customerEmail }, { $inc: { amount: -payload.amount }, }, { new: true }
+    // );
+    wallet.amount -= payload.amount;
+    await wallet.save()
     return { success: true };
 };
 
@@ -167,13 +172,13 @@ const providerWithdrawDB = async (payload: any, providerEmail: string) => {
 
 
 
-export const     
+export const
 
 
- 
-webhookService = {
-    processWebhookEvent,
-    myWallatDB,
-    paymentHistoryDB,
-    providerWithdrawDB
-};
+
+    webhookService = {
+        processWebhookEvent,
+        myWallatDB,
+        paymentHistoryDB,
+        providerWithdrawDB
+    };

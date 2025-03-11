@@ -7,6 +7,6 @@ import { authMiddleware } from "../../../middlewares/auth";
 const router = express.Router();
 router.post("/create", authMiddleware("admin"), createTerms);
 router.get("/", getAllTerms);
-router.post("/update", updateTerms);
+router.post("/terms-update", updateTerms);
 
 export const TermsRoutes = router;

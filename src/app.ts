@@ -11,7 +11,7 @@ import router from "./routes";
 import { logger, logHttpRequests } from "./logger/logger";
 import { paymentController } from "./modules/basic_modules/payment/payment.controller";
 
-// Create an Express application
+
 const app: Application = express();
 app.use('/stripe/webhook', express.raw({ type: "application/json" }), paymentController.webhookController);
 app.use(express.json());

@@ -6,7 +6,7 @@ import { messageservice } from "./messages.service";
 
 const getConversation = catchAsync(async (req, res) => {
     const {conversationId} = req.params
-    const result = await messageservice.getConversationDB(conversationId)
+    const result = await messageservice.getConversationDB(conversationId , req.query)
 
     sendResponse(res, {
         success: true,
@@ -14,7 +14,7 @@ const getConversation = catchAsync(async (req, res) => {
         message: " Retrieved all message successfully",
         data: result,
     });
-}) 
+})   
 export const messageController = {
     getConversation
 }

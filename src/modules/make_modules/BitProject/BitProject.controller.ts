@@ -1,13 +1,14 @@
 import httpStatus from "http-status";
+import AppError from "../../../errors/AppError";
+import { tokenDecoded } from "../../../middlewares/decoded";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
-import { bitProjectService } from "./BitProject.service";
-import { tokenDecoded } from "../../../middlewares/decoded";
-import { paymentController } from "../../basic_modules/payment/payment.controller";
-import BitProjectModel from "./BitProject.model";
-import { TBitProject } from "./BitProject.interface";
-import AppError from "../../../errors/AppError";
+import { sendNotification } from "../../../utils/socket";
+import { UserModel } from "../../basic_modules/user/user.model";
+import projectModel from "../addProject/project-model";
 import { conversationModel } from "../messages/messages.model";
+import BitProjectModel from "./BitProject.model";
+import { bitProjectService } from "./BitProject.service";
 
 
 const createBitProject = catchAsync(async (req, res) => {
@@ -27,6 +28,13 @@ const createBitProject = catchAsync(async (req, res) => {
         success: true,
         message: 'Project bit added ! ',
         data: result
+    });
+    const project: any = await projectModel.findById(result.projectId)
+    const user = await UserModel.findById(project.userId)
+    const provider = await UserModel.findById(result.providerId)
+    await sendNotification({
+        userId: user._id,
+        message: `${provider.name} bit your project !`,
     });
 });
 const singleProject = catchAsync(async (req, res) => {
@@ -54,7 +62,10 @@ const bitProjectApproved = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const email = decoded.user.email;
     const userId = decoded.user._id;
+    const name = decoded.user.name;
     const bitProjectApproved = await bitProjectService.bitProjectApprovedDB(bitProjectId, email)
+    console.log(bitProjectApproved);
+
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -69,7 +80,10 @@ const bitProjectApproved = catchAsync(async (req, res) => {
         });
         await conversation.save();
     }
-
+    await sendNotification({
+        userId: bitProjectApproved.providerId,
+        message: `${name} accept your Bits !`,
+    });
 
 });
 const currentProjects = catchAsync(async (req, res) => {
