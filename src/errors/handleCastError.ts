@@ -3,7 +3,7 @@ import { TErrorSoureces, TGenericErrorResponse } from "../interface/error";
 const hendelCastError = (
   err: mongoose.Error.CastError
 ): TGenericErrorResponse => {
-  const  errorSoures: TErrorSoureces = [
+  const errorSoures: TErrorSoureces = [
     {
       path: err.path,
       message: err.message,
@@ -14,7 +14,7 @@ const hendelCastError = (
   return {
     statusCode,
     message: errorSoures[0].message,
-     errorSoures,
+    errorSoures,
   };
 };
 export default hendelCastError;
