@@ -10,7 +10,7 @@ const projectSchema = new Schema<TProject>(
         },
         street: { type: String, required: true, trim: true },
         city: { type: String, required: true, trim: true },
-        postCode: { type: String, required: true, trim: true, match: [/^\d{4}$/, "Post Code must be exactly 4 digits"] },
+        postCode: { type: String, required: true, trim: true, match: [/^\d{5}$/, "Post Code must be exactly 5 digits"] },
         locationType: { type: String, enum: ["Home", "Business"], required: true },
         time: {
             type: String,
@@ -26,7 +26,7 @@ const projectSchema = new Schema<TProject>(
             type: Boolean,
             default: true
         },
-        isApprove : {
+        isApprove: {
             type: Boolean,
             default: false
         },

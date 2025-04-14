@@ -1,9 +1,11 @@
 
 import httpStatus from "http-status";
+import AppError from "../../../errors/AppError";
 import { tokenDecoded } from "../../../middlewares/decoded";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
 import { sendNotification } from "../../../utils/socket";
+import { paymentController } from "../../basic_modules/payment/payment.controller";
 import { paymentHistoryModel, PaymentModel } from "../../basic_modules/payment/payment.model";
 import { UserModel } from "../../basic_modules/user/user.model";
 import { projectService } from "./project-service";
@@ -100,12 +102,40 @@ const allProject = catchAsync(async (req, res) => {
     });
 });
 const singleProject = catchAsync(async (req, res) => {
+    const { decoded }: any = await tokenDecoded(req, res)
+    const userId = decoded.user._id;
+    const email = decoded.user.email;
+    const provider = await UserModel.findById(userId)
+    if (!provider) {
+        throw new AppError(httpStatus.NOT_FOUND, 'provider not found')
+    }
+    if (provider.role === "provider" && provider.verifiedSkillset === false) {
+        const providerData = { name: provider.name, providerId: provider._id, email: provider.email, role: 'provider', }
+        const { url } = await paymentController.createCheckoutSession(email, 30, providerData);
+        sendResponse(res, {
+            statusCode: httpStatus.OK,
+            success: true,
+            message: "Please pay $30 ",
+            data: url
+        });
+        return
+    }
     const { projectId } = req.params
     const allProject = await projectService.singleProjectDB(projectId)
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
         message: ' Get Single  Project ',
+        data: allProject
+    });
+});
+const updateProject = catchAsync(async (req, res) => {
+    const { projectId } = req.params
+    const allProject = await projectService.updateProjectDB(req.body, projectId)
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Project update successfully ! ',
         data: allProject
     });
 });
@@ -117,5 +147,6 @@ export const projectController = {
     boostProject,
     allProject,
     singleProject,
+    updateProject
 
 }

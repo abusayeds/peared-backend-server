@@ -4,6 +4,7 @@ import { tokenDecoded } from "../../../middlewares/decoded";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
 import { sendNotification } from "../../../utils/socket";
+import { paymentController } from "../../basic_modules/payment/payment.controller";
 import { UserModel } from "../../basic_modules/user/user.model";
 import projectModel from "../addProject/project-model";
 import { conversationModel } from "../messages/messages.model";
@@ -14,6 +15,22 @@ import { bitProjectService } from "./BitProject.service";
 const createBitProject = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const userId = decoded.user._id;
+    const email = decoded.user.email;
+    const provider = await UserModel.findById(userId)
+    if (!provider) {
+        throw new AppError(httpStatus.NOT_FOUND, 'provider not found')
+    }
+    if (provider.role === "provider" && provider.verifiedSkillset === false) {
+        const providerData = { name: provider.name, providerId: provider._id, email: provider.email, role: 'provider', }
+        const { url } = await paymentController.createCheckoutSession(email, 30, providerData);
+        sendResponse(res, {
+            statusCode: httpStatus.OK,
+            success: true,
+            message: "Please pay $30 ",
+            data: url
+        });
+        return
+    }
     const existbits = await BitProjectModel.findOne({
         projectId: req.body.projectId,
         providerId: userId
@@ -31,7 +48,6 @@ const createBitProject = catchAsync(async (req, res) => {
     });
     const project: any = await projectModel.findById(result.projectId)
     const user = await UserModel.findById(project.userId)
-    const provider = await UserModel.findById(result.providerId)
     await sendNotification({
         userId: user._id,
         message: `${provider.name} bit your project !`,

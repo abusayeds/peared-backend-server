@@ -8,7 +8,6 @@ import AppError from "../../../errors/AppError";
 import { tokenDecoded } from "../../../middlewares/decoded";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
-import { paymentController } from "../payment/payment.controller";
 import { UserModel } from "./user.model";
 import {
   findUserById,
@@ -45,16 +44,19 @@ const joinProvider = catchAsync(async (req: Request, res: Response) => {
   }
 
   if (req.body.service.length === 0) throw new AppError(400, "Service is Required")
-  const providerData = { ...req.body, role: 'provider', }
-
-  const { url, } = await paymentController.createCheckoutSession(req.body.email, 30, providerData);
+  const providerPayload = { ...req.body, role: "provider" }
+  const result = await userService.joinProviderDB(providerPayload)
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "For Join as a Contractor pay $30 ",
-    data: url
+    message: "Provider ragistation completed",
+    data: result
   });
 });
+
+
+
+
 // export const verifyOTP = catchAsync(async (req: Request, res: Response) => {
 //   const { otp } = req.body;
 //   const authHeader = req.headers.authorization;

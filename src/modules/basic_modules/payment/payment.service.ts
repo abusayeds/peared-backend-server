@@ -1,9 +1,8 @@
+import { UserModel } from './../user/user.model';
 
 import httpStatus from "http-status";
 import AppError from "../../../errors/AppError";
 import { withdrawModel } from "../../make_modules/withdraw/withdraw.model";
-import { UserModel } from "../user/user.model";
-import { userService } from "../user/user.service";
 import { checkPaymentStatusFromStripe } from "./payment.constant";
 import { stripe } from "./payment.controller";
 import { paymentHistoryModel, PaymentModel } from "./payment.model";
@@ -28,14 +27,7 @@ async function processPayment(event: any) {
     if (payment_status === 'completed') {
         const customerEmail = session.metadata.customerEmail;
         const isExistPayment = await PaymentModel.findOne({ customerEmail });
-        if (isExistPayment) {
-            await PaymentModel.findOneAndUpdate(
-                { customerEmail }, { $inc: { amount: session.metadata.amount }, }, { new: true }
-            );
-            await PaymentModel.findOneAndUpdate(
-                { sessionId: "admin1234" }, { $inc: { amount: session.metadata.amount }, }, { new: true }
-            )
-        } else if (projectData.role === 'provider') {
+        if (projectData.role === 'provider') {
             await PaymentModel.create({
                 sessionId: session.id,
                 customerEmail: session.metadata.customerEmail,
@@ -43,6 +35,13 @@ async function processPayment(event: any) {
                 paymentStatus: "completed"
             });
             joinProvider(event)
+        } else if (isExistPayment) {
+            await PaymentModel.findOneAndUpdate(
+                { customerEmail }, { $inc: { amount: session.metadata.amount }, }, { new: true }
+            );
+            await PaymentModel.findOneAndUpdate(
+                { sessionId: "admin1234" }, { $inc: { amount: session.metadata.amount }, }, { new: true }
+            )
         } else {
             await PaymentModel.create({
                 sessionId: session.id,
@@ -66,18 +65,13 @@ async function processPayment(event: any) {
     }
 }
 
-
-
-
 async function joinProvider(event: any) {
     const session = event.data.object;
     const payment = await PaymentModel.findOne({ sessionId: session.id });
     if (!payment) {
         throw new AppError(400, ` Payment not found for session: ${session.id}`);
-
     }
     try {
-
         await PaymentModel.findOneAndUpdate(
             { sessionId: "admin123" },
             {
@@ -87,14 +81,16 @@ async function joinProvider(event: any) {
         );
         const projectData = JSON.parse(session.metadata.projectData);
         await paymentHistoryModel.create({
-            historyName: `${projectData.name}  join`,
+            historyName: `${projectData.name}  provider pay `,
             email: projectData.email,
             admin: 'admin123',
             balance: session.metadata.amount,
             paymentType: "deposit"
         })
-        await userService.joinProviderDB(projectData);
-
+        await UserModel.findByIdAndUpdate(
+            projectData.providerId, { verifiedSkillset: true }, { new: true }
+        );
+        // await userService.joinProviderDB(projectData);
     } catch (error) {
         throw new AppError(400, `${error}`);
     }
@@ -103,7 +99,6 @@ async function joinProvider(event: any) {
 
 const myWallatDB = async (email: string) => {
     const wallet = await PaymentModel.findOne({ customerEmail: email })
-
     return wallet;
 };
 const paymentHistoryDB = async (email: string) => {
@@ -172,13 +167,9 @@ const providerWithdrawDB = async (payload: any, providerEmail: string) => {
 
 
 
-export const
-
-
-
-    webhookService = {
-        processWebhookEvent,
-        myWallatDB,
-        paymentHistoryDB,
-        providerWithdrawDB
-    };
+export const webhookService = {
+    processWebhookEvent,
+    myWallatDB,
+    paymentHistoryDB,
+    providerWithdrawDB
+};

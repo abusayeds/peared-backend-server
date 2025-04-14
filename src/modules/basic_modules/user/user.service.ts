@@ -66,7 +66,6 @@ const createUserDB = async (payload: IUser) => {
   return result
 }
 const joinProviderDB = async (payload: IUser) => {
-
   const isUserRegistered = await UserModel.findOne({ email: payload.email });
   const { password, confirmPassword } = payload
   if (isUserRegistered) {
@@ -87,15 +86,14 @@ const joinProviderDB = async (payload: IUser) => {
 
 const loginDB = async (payload: any) => {
 
-
   const user: any = await findUserByEmail(payload.email);
-  if (user?.isApproved === false) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Your request is awaiting admin approval.')
-  }
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND,
       "This account does not exist.",
     );
+  }
+  if (user?.isApproved === false) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Your request is awaiting admin approval.')
   }
   if (user.isDeleted) {
     throw new AppError(httpStatus.NOT_FOUND,

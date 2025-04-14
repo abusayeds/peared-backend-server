@@ -131,6 +131,14 @@ const singleProjectDB = async (projectId: string) => {
 
     return SingleProject
 }
+const updateProjectDB = async (payload: TProject, projectId: string) => {
+    const updatedProject = await projectModel.findByIdAndUpdate(
+        projectId,
+        payload,
+        { new: true }
+    );
+    return updatedProject
+}
 
 
 
@@ -140,7 +148,8 @@ export const projectService = {
     bitProjectDB,
     boostProjctDB,
     allProjectDB,
-    singleProjectDB
+    singleProjectDB,
+    updateProjectDB
 
 
 }

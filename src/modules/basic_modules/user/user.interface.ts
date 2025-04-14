@@ -16,10 +16,13 @@ export interface IUser extends Document {
   address?: string;
   city?: string;
   image?: string;
+  verifiedSkillset: boolean;
+  oshaCertificat?: string;
+  backgroundCertificat?: string;
   certificate: string[];
   postalCode: string;
   role: "admin" | "user" | "provider";
-  accountId ?  : string
+  accountId?: string
   status: "active" | "blocked";
   service: string[];
   isApproved: boolean

@@ -10,6 +10,7 @@ import catchAsync from "../../../utils/catchAsync";
 import { UserModel } from "../user/user.model";
 export const stripe = require("stripe")(STRIPE_SECRET_KEY);
 const createCheckoutSession = async (customerEmail: string, amount: number, projectData?: any) => {
+
   if (!customerEmail) {
     throw new AppError(httpStatus.BAD_REQUEST, "customerEmail is requred !")
   }
@@ -48,7 +49,6 @@ const webhookController = async (req: Request, res: Response) => {
       throw new Error("Webhook Secret Key Missing!");
     }
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-
     await webhookService.processWebhookEvent(event);
 
   } catch (err: any) {
@@ -70,7 +70,6 @@ const addBalance = catchAsync(
     const user = await UserModel.findOne({ email: email })
     if (!user) {
       throw new AppError(httpStatus.NOT_FOUND, "User Not Found ! ");
-
     }
     const { url } = await createCheckoutSession(email, amount, user)
     sendResponse(res, {

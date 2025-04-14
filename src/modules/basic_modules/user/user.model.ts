@@ -1,6 +1,6 @@
-import mongoose, { Schema } from "mongoose";
-import { IPendingUser, IUser, IOTP } from "./user.interface";
 import bcrypt from "bcrypt";
+import mongoose, { Schema } from "mongoose";
+import { IOTP, IPendingUser, IUser } from "./user.interface";
 const PendingUserSchema = new Schema<IPendingUser>(
   {
     email: { type: String, required: true, unique: true, trim: true },
@@ -30,7 +30,9 @@ const UserSchema = new Schema<IUser>(
     address: { type: String, trim: true, required: false },
     city: { type: String, trim: true, required: false },
     image: { type: String, trim: true, default: "", required: false },
-
+    verifiedSkillset: { type: Boolean, default: false, required: false },
+    oshaCertificat: { type: String, trim: true, default: "", required: false },
+    backgroundCertificat: { type: String, trim: true, default: "", required: false },
     certificate: {
       type: [String], trim: true, required: false, default: undefined
     },
