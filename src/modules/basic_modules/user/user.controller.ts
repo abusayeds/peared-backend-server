@@ -54,9 +54,6 @@ const joinProvider = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-
-
-
 // export const verifyOTP = catchAsync(async (req: Request, res: Response) => {
 //   const { otp } = req.body;
 //   const authHeader = req.headers.authorization;
@@ -93,7 +90,6 @@ const joinProvider = catchAsync(async (req: Request, res: Response) => {
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const user = await userService.loginDB(req.body)
-
   const token = generateToken({ user: user });
   sendResponse(res, {
     statusCode: httpStatus.OK,
