@@ -93,7 +93,8 @@ const boostProject = catchAsync(async (req, res) => {
 });
 
 const allProject = catchAsync(async (req, res) => {
-    const allProject = await projectService.allProjectDB(req.query)
+    const { decoded }: any = await tokenDecoded(req, res)
+    const allProject = await projectService.allProjectDB(req.query, decoded.user)
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,

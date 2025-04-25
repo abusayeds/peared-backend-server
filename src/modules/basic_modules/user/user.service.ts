@@ -11,6 +11,15 @@ import { userSearchField } from "./user.conastant";
 import { IUser, } from "./user.interface";
 import { OTPModel, UserModel } from "./user.model";
 
+import { Server as SocketIOServer } from "socket.io";
+export let io: SocketIOServer;
+const socketMap: Map<string, any> = new Map();
+const userMap: Map<string, string> = new Map();
+
+
+
+
+
 export const generateToken = (payload: any): string => {
   return jwt.sign(payload, JWT_SECRET_KEY as string, { expiresIn: "7d" });
 };
@@ -67,6 +76,12 @@ const createUserDB = async (payload: IUser) => {
 }
 const joinProviderDB = async (payload: IUser) => {
   const isUserRegistered = await UserModel.findOne({ email: payload.email });
+  // if (!payload.oshaCertificat) {
+  //   throw new AppError(httpStatus.BAD_REQUEST, 'OshaCertificat is required')
+  // }
+  // if (!payload.backgroundCertificat) {
+  //   throw new AppError(httpStatus.BAD_REQUEST, 'Background Certificat is required')
+  // }
   const { password, confirmPassword } = payload
   if (isUserRegistered) {
     throw new AppError(httpStatus.BAD_REQUEST,
@@ -269,7 +284,7 @@ const approveProviderDB = async (payload: any) => {
   if (payload.isApprove === true) {
     provider.isApproved = true
     await provider.save()
-    console.log(provider, 'true log');
+
     return true
 
 
@@ -282,8 +297,30 @@ const approveProviderDB = async (payload: any) => {
 
 }
 
+// socket user Activity
+export const updateUserActivity = async (userId: string) => {
+  try {
+    await UserModel.findByIdAndUpdate(
+      userId, { isActive: true, }, { new: true }
+    );
+  } catch (error) {
+    console.error('Error updating user activity:', error);
+  }
+};
+export const setUserInactive = async (userId: string) => {
+  try {
+    await UserModel.findByIdAndUpdate(
+      userId, { isActive: false, }, { new: true }
+    );
+  } catch (error) {
+    console.error('Error setting user inactive:', error);
+  }
+};
 
-
+// export const userActivity = (socket: Socket, userId: string) => {
+//   updateUserActivity(userId);
+//   io.emit('user-status-updated', { isActive: true, lastActive: Date.now() });
+// }
 
 
 

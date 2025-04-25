@@ -36,7 +36,7 @@ const UserSchema = new Schema<IUser>(
     certificate: {
       type: [String], trim: true, required: false, default: undefined
     },
-    postalCode: { type: String, required: true, trim: true, match: [/^\d{5}$/, "Post Code must be exactly 5 digits"] },
+    postalCode: { type: String, required: false, trim: true, match: [/^\d{5}$/, "Post Code must be exactly 5 digits"] },
     role: {
       type: String,
       enum: ["admin", "user", "provider"],
@@ -59,6 +59,10 @@ const UserSchema = new Schema<IUser>(
       type: Boolean, required: false, default: undefined
     },
     isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    isActive: {
       type: Boolean,
       default: false,
     },

@@ -5,7 +5,7 @@ import { UserModel } from "../modules/basic_modules/user/user.model";
 const admin = {
   name: "MD Admin",
   email: "admin@gmail.com",
-  password: "123456",
+  password: "1qazxsw2",
   role: "admin",
   isDeleted: false,
 };

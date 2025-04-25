@@ -8,10 +8,17 @@ import { providerFeedbackModel } from "../providerFeedback/providerModel";
 import { searchProject } from "./project-constant";
 import { TProject } from "./project-interface";
 import projectModel from "./project-model";
+import { IUser } from "../../basic_modules/user/user.interface";
 
 
 
 const createProjectDB = async (payload: TProject, email: string) => {
+    // if (!payload.oshaCertificate && !payload.backgroundCertificate) {
+    //     throw new AppError(
+    //         httpStatus.BAD_REQUEST,
+    //         'At least one certificate (OSHA or Background) is required.'
+    //     );
+    // }
     const isWallet = await PaymentModel.findOne({ customerEmail: email })
     if (!isWallet) {
         throw new AppError(httpStatus.PAYMENT_REQUIRED, 'Create a wallet account ')
@@ -31,7 +38,7 @@ const createProjectDB = async (payload: TProject, email: string) => {
 }
 
 const myProjectDB = async (userId: string, query: Record<string, unknown>) => {
-    const projectQuery = new queryBuilder(projectModel.find({ userId: userId }), query).sort()
+    const projectQuery = new queryBuilder(projectModel.find({ userId: userId }), query).sort().search(searchProject).filter()
     const { totalData } = await projectQuery.paginate(projectModel.find({ userId: userId }))
     const projects = await projectQuery.modelQuery.exec()
     // const projects: TProject[] = await projectModel.find({ userId: userId });
@@ -113,18 +120,48 @@ const boostProjctDB = async (projectId: string, email: string) => {
     await project.save()
     return project
 }
-const allProjectDB = async (query: Record<string, unknown>) => {
-    const projectQuery = new queryBuilder(projectModel.find({ payment: true }), query).search(searchProject).filter().sort()
-    const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true }))
-    const project = await projectQuery.modelQuery.exec()
-    const currentPage = Number(query?.page) || 1;
-    const limit = Number(query.limit) || 10;
-    const pagination = projectQuery.calculatePagination({
-        totalData,
-        currentPage,
-        limit,
-    });
-    return { pagination, project }
+const allProjectDB = async (query: Record<string, unknown>, user: IUser) => {
+
+    if (user.oshaCertificat && user.backgroundCertificat) {
+        const projectQuery = new queryBuilder(projectModel.find({ payment: true, oshaCertificate: true, backgroundCertificate: true }), query).search(searchProject).filter().sort()
+        const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true, oshaCertificate: true, backgroundCertificate: true }))
+        const project = await projectQuery.modelQuery.exec()
+        const currentPage = Number(query?.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = projectQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, project }
+    } else if (user.oshaCertificat) {
+        const projectQuery = new queryBuilder(projectModel.find({ payment: true, oshaCertificate: true, }), query).search(searchProject).filter().sort()
+        const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true, oshaCertificate: true, }))
+        const project = await projectQuery.modelQuery.exec()
+        const currentPage = Number(query?.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = projectQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, project }
+    } else if (user.backgroundCertificat) {
+        const projectQuery = new queryBuilder(projectModel.find({ payment: true, backgroundCertificate: true }), query).search(searchProject).filter().sort()
+        const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true, backgroundCertificate: true }))
+        const project = await projectQuery.modelQuery.exec()
+        const currentPage = Number(query?.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = projectQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, project }
+    } else {
+        return null
+    }
+
 }
 const singleProjectDB = async (projectId: string) => {
     const SingleProject = await projectModel.findById(projectId)

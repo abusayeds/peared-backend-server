@@ -46,7 +46,7 @@ const payByAdminDB = async (withDrawId: string) => {
     if (!accountInfo.capabilities || accountInfo.capabilities.transfers !== 'active') {
         throw new AppError(httpStatus.PAYMENT_REQUIRED, "Get bank information from Provider.");
     }
-    const adminCommission = 10;
+    const adminCommission = 5;
     let serviceProviderAmount = withDraw.amount - (withDraw.amount * adminCommission / 100);
     serviceProviderAmount = Math.round(serviceProviderAmount);
     let transfar;
@@ -80,8 +80,6 @@ const payByAdminDB = async (withDrawId: string) => {
     }
     return withDraw;
 };
-
-
 
 export const withDarwService = {
     payByAdminDB,

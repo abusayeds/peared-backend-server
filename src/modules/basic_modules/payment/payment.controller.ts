@@ -1,13 +1,13 @@
 
 import { Request, Response } from "express";
-import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from "../../../config";
-import { webhookService } from "./payment.service";
-import { tokenDecoded } from "../../../middlewares/decoded";
-import AppError from "../../../errors/AppError";
 import httpStatus from "http-status";
-import sendResponse from "../../../utils/sendResponse";
+import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from "../../../config";
+import AppError from "../../../errors/AppError";
+import { tokenDecoded } from "../../../middlewares/decoded";
 import catchAsync from "../../../utils/catchAsync";
+import sendResponse from "../../../utils/sendResponse";
 import { UserModel } from "../user/user.model";
+import { webhookService } from "./payment.service";
 export const stripe = require("stripe")(STRIPE_SECRET_KEY);
 const createCheckoutSession = async (customerEmail: string, amount: number, projectData?: any) => {
 
@@ -94,8 +94,13 @@ const myWallat = catchAsync(async (req, res) => {
 });
 const paymentHistory = catchAsync(async (req, res) => {
   const { decoded }: any = await tokenDecoded(req, res)
+  console.log(decoded);
+
   const email = decoded.user.email;
-  const paymentHistory = await webhookService.paymentHistoryDB(email)
+  const role = decoded.user.role
+
+
+  const paymentHistory = await webhookService.paymentHistoryDB(email, req.query, role)
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,

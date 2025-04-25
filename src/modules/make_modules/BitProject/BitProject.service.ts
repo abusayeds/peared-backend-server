@@ -1,13 +1,14 @@
 
 import httpStatus from "http-status"
+import queryBuilder from "../../../builder/queryBuilder"
 import AppError from "../../../errors/AppError"
+import { paymentHistoryModel, PaymentModel } from "../../basic_modules/payment/payment.model"
+import { UserModel } from "../../basic_modules/user/user.model"
 import projectModel from "../addProject/project-model"
+import { conversationModel } from "../messages/messages.model"
+import { providerFeedbackModel } from "../providerFeedback/providerModel"
 import { TBitProject } from "./BitProject.interface"
 import BitProjectModel from "./BitProject.model"
-import { paymentHistoryModel, PaymentModel } from "../../basic_modules/payment/payment.model"
-import { providerFeedbackModel } from "../providerFeedback/providerModel"
-import { UserModel } from "../../basic_modules/user/user.model"
-import { conversationModel } from "../messages/messages.model"
 
 const createBitProject = async (payload: TBitProject) => {
     const isProject = await projectModel.findById(payload.projectId)
@@ -122,7 +123,7 @@ const confirmProjectDB = async (projectId: string) => {
         select: "userId projectCategory projectName street city postCode image ",
     }).populate({
         path: "providerId",
-        select: "name image",
+        select: "name image isActive updatedAt",
     })
     const user = await UserModel.findById(currentProjects.projectId.userId)
     const conversation: any = await conversationModel.findOne({
@@ -134,30 +135,84 @@ const confirmProjectDB = async (projectId: string) => {
         currentProjects,
         conversationId: conversation._id,
         userName: user.name,
-        userImage: user.image
+        userImage: user.image,
+        isActive: user.isActive,
+        updatedAt: user.updatedAt
     }
 }
 
-const currentProjectsDB = async (providerId: string) => {
-    const currentProjects = await BitProjectModel.find({
-        isComplete: 'running',
-        providerId: providerId,
-    }).populate({
+
+
+
+
+
+// const currentProjectsDB = async (providerId: string) => {
+//     const currentProjects = await BitProjectModel.find({
+//         isComplete: 'running',
+//         providerId: providerId,
+//     }).populate({
+//         path: "projectId",
+//         select: "projectCategory street postCode image",
+//     })
+//     return currentProjects
+// }
+// const pendingsBitsDB = async (providerId: string) => {
+//     const pendingsBits = await BitProjectModel.find({
+//         isComplete: 'pending',
+//         providerId: providerId,
+//     }).populate({
+//         path: "projectId",
+//         select: "projectCategory street postCode image ",
+//     })
+//     return pendingsBits
+// }
+const currentProjectsDB = async (providerId: string, query: Record<string, unknown>) => {
+    const ProjectsQuery = new queryBuilder(BitProjectModel.find({ isComplete: 'running', providerId: providerId }), query);
+    const { totalData } = await ProjectsQuery.paginate(BitProjectModel.find({ isComplete: 'running', providerId: providerId }));
+
+    const currentProjects = await ProjectsQuery.modelQuery.populate({
         path: "projectId",
         select: "projectCategory street postCode image",
-    })
-    return currentProjects
-}
-const pendingsBitsDB = async (providerId: string) => {
-    const pendingsBits = await BitProjectModel.find({
-        isComplete: 'pending',
-        providerId: providerId,
-    }).populate({
+    }).exec();
+
+    const currentPage = Number(query?.page) || 1;
+    const limit = Number(query.limit) || 10;
+
+    const pagination = ProjectsQuery.calculatePagination({
+        totalData,
+        currentPage,
+        limit,
+    });
+
+    return { pagination, currentProjects };
+};
+
+const pendingsBitsDB = async (providerId: string, query: Record<string, unknown>) => {
+    const ProjectsQuery = new queryBuilder(BitProjectModel.find({ isComplete: 'pending', providerId: providerId }), query);
+    const { totalData } = await ProjectsQuery.paginate(BitProjectModel.find({ isComplete: 'pending', providerId: providerId }));
+    const pendingsBits = await ProjectsQuery.modelQuery.populate({
         path: "projectId",
-        select: "projectCategory street postCode image ",
-    })
-    return pendingsBits
-}
+        select: "projectCategory street postCode image",
+    }).exec();
+
+    const currentPage = Number(query?.page) || 1;
+    const limit = Number(query.limit) || 10;
+
+    const pagination = ProjectsQuery.calculatePagination({
+        totalData,
+        currentPage,
+        limit,
+    });
+
+    return { pagination, pendingsBits };
+};
+
+
+
+
+
+
+
 const ProjectOkByProviderDB = async (bitProjectId: string, providerId: string) => {
     const currentProjects = await BitProjectModel.findOne({
         _id: bitProjectId,

@@ -12,6 +12,8 @@ export type TProject = {
     locationType: "Home" | "Business";
     time: "Urgent(1 - 2 days)" | "Within 2 weeks" | "More than 2 weeks" | "Not sure - still planning";
     priceRange: string;
+    backgroundCertificate: boolean,
+    oshaCertificate: boolean
     image: string
     workDetails: string;
     payment: boolean,

@@ -18,8 +18,6 @@ import { NotificationModel } from "./notification.model";
 
 
 const getMyNotification = async (userId: string, query: Record<string, unknown>) => {
-    console.log(userId);
-
     const notificationQuery = new queryBuilder(NotificationModel.find({ userId: userId }), query).sort();
     const { totalData } = await notificationQuery.paginate(NotificationModel.find({ userId: userId }))
     const notifications = await notificationQuery.modelQuery.exec()

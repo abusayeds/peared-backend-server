@@ -22,6 +22,8 @@ const projectSchema = new Schema<TProject>(
         projectName: { type: String, required: true, trim: true },
         projectCategory: { type: String, required: true, trim: true },
         workDetails: { type: String, required: true, maxlength: 200, trim: true },
+        backgroundCertificate: { type: Boolean, required: false, },
+        oshaCertificate: { type: Boolean, required: false, },
         payment: {
             type: Boolean,
             default: true

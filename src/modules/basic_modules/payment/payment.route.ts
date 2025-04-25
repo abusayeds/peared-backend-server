@@ -7,7 +7,7 @@ router.post('/', express.raw({ type: "application/json" }), paymentController.we
 
 router.post('/add-balance', authMiddleware(role.user, role.provider), paymentController.addBalance)
 router.get("/my-wallat", authMiddleware(role.user, role.provider), paymentController.myWallat);
-router.get("/my-payment-history", authMiddleware(role.user), paymentController.paymentHistory);
+router.get("/my-payment-history", authMiddleware(role.user, role.provider, role.admin), paymentController.paymentHistory);
 
 
 // withdraw rerquest 

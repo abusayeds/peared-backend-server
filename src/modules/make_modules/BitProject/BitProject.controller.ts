@@ -80,7 +80,6 @@ const bitProjectApproved = catchAsync(async (req, res) => {
     const userId = decoded.user._id;
     const name = decoded.user.name;
     const bitProjectApproved = await bitProjectService.bitProjectApprovedDB(bitProjectId, email)
-    console.log(bitProjectApproved);
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
@@ -105,7 +104,7 @@ const bitProjectApproved = catchAsync(async (req, res) => {
 const currentProjects = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const providerId = decoded.user._id;
-    const currentBitProjects = await bitProjectService.currentProjectsDB(providerId)
+    const currentBitProjects = await bitProjectService.currentProjectsDB(providerId, req.query)
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -117,14 +116,13 @@ const currentProjects = catchAsync(async (req, res) => {
 const pendingsBits = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const providerId = decoded.user._id;
-    const pendingBitProjects = await bitProjectService.pendingsBitsDB(providerId)
+    const pendingBitProjects = await bitProjectService.pendingsBitsDB(providerId, req.query)
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
         message: `Pendings Bits Retrieve  `,
         data: pendingBitProjects
     });
-
 });
 const ProjectOkByProvider = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)

@@ -1,6 +1,7 @@
 import { UserModel } from './../user/user.model';
 
 import httpStatus from "http-status";
+import queryBuilder from '../../../builder/queryBuilder';
 import AppError from "../../../errors/AppError";
 import { withdrawModel } from "../../make_modules/withdraw/withdraw.model";
 import { checkPaymentStatusFromStripe } from "./payment.constant";
@@ -101,10 +102,38 @@ const myWallatDB = async (email: string) => {
     const wallet = await PaymentModel.findOne({ customerEmail: email })
     return wallet;
 };
-const paymentHistoryDB = async (email: string) => {
-    const paymentHistory = await paymentHistoryModel.find({ email: email })
+const paymentHistoryDB = async (email: string, query: Record<string, unknown>, role: string) => {
+    ''
+    if (role === 'admin') {
+        const paymentHistoryQuery = new queryBuilder(paymentHistoryModel.find({
+            paymentType: "withdraw"
+        }), query).sort()
+        const { totalData } = await paymentHistoryQuery.paginate(paymentHistoryModel.find({
+            paymentType: "withdraw"
+        }))
+        const paymentHistory = await paymentHistoryQuery.modelQuery.exec()
+        const currentPage = Number(query?.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = paymentHistoryQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, paymentHistory };
+    } else {
+        const paymentHistoryQuery = new queryBuilder(paymentHistoryModel.find({ email: email }), query).sort()
+        const { totalData } = await paymentHistoryQuery.paginate(paymentHistoryModel.find({ email: email }))
+        const paymentHistory = await paymentHistoryQuery.modelQuery.exec()
+        const currentPage = Number(query?.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = paymentHistoryQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, paymentHistory };
+    }
 
-    return paymentHistory;
 };
 
 

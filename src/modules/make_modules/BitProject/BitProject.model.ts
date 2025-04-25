@@ -27,6 +27,14 @@ const BitProjectSchema = new Schema<TBitProject>(
             type: String,
             required: true
         },
+        certificate: {
+            type: [String], trim: true, required: false, default: undefined
+        },
+        estimatedServiceTime: {
+            type: Boolean,
+            required: false
+        },
+
         startTime: {
             type: Date,
             default: Date.now

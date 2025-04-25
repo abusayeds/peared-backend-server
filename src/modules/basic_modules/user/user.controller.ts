@@ -90,6 +90,7 @@ const joinProvider = catchAsync(async (req: Request, res: Response) => {
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const user = await userService.loginDB(req.body)
+
   const token = generateToken({ user: user });
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -220,6 +221,7 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
   });
 
 });
+
 
 const myProfile = catchAsync(async (req: Request, res: Response) => {
   const { decoded, token }: any = await tokenDecoded(req, res)

@@ -26,6 +26,7 @@ export interface IUser extends Document {
   status: "active" | "blocked";
   service: string[];
   isApproved: boolean
+  isActive: boolean;
   isDeleted: boolean;
 }
 
