@@ -9,12 +9,10 @@ import { tokenDecoded } from "../../../middlewares/decoded";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
 import { UserModel } from "./user.model";
-import {
-  findUserById,
-  generateToken,
 
-  userDelete,
-  userService,
+import {
+  generateToken,
+  userService
 } from "./user.service";
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.createUserDB(req.body)
@@ -102,6 +100,8 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
     },
   });
 });
+
+
 const forgotPassword = catchAsync(async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
@@ -344,24 +344,17 @@ export const BlockUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const deleteUser = catchAsync(async (req: Request, res: Response) => {
-  const id = req.query?.id as string;
-
-  const user = await findUserById(id);
-
+  const { decoded, }: any = await tokenDecoded(req, res)
+  const userId = decoded.user._id;
+  const user = await UserModel.findById(userId);
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND,
-      "user not found .",
+      "User not found.",
     );
   }
-
-  if (user.isDeleted) {
-    throw new AppError(httpStatus.NOT_FOUND,
-      "user  is already deleted.",
-    );
-  }
-  await userDelete(id);
-
-  sendResponse(res, {
+  await UserModel.findByIdAndDelete(userId);
+  // Uncomment this when you're ready to use the notification function
+  return sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "user deleted successfully",
@@ -370,3 +363,90 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+export const deleteInstruction = catchAsync(async (req: Request, res: Response) => {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Delete Account Instructions</title>
+      <style>
+        body {
+          background: #f7fafc;
+          margin: 0;
+          padding: 0;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .container {
+          background: #fff;
+          border-radius: 16px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+          padding: 32px 24px;
+          max-width: 420px;
+          width: 100%;
+          font-family: 'Segoe UI', Arial, sans-serif;
+          text-align: center;
+        }
+        h3 {
+          color: #1a8f3c;
+          margin-bottom: 18px;
+          font-size: 2rem;
+          letter-spacing: 1px;
+        }
+        ol {
+          padding-left: 0;
+          list-style-position: inside;
+          margin: 0;
+        }
+        li {
+          margin-bottom: 28px;
+          font-size: 1.08rem;
+        }
+        strong {
+          color: #222;
+        }
+        img {
+          display: block;
+          margin: 14px auto 0 auto;
+          max-width: 90%;
+          border-radius: 8px;
+          border: 1.5px solid #e0e0e0;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        @media (max-width: 600px) {
+          .container {
+            padding: 18px 4px;
+          }
+          h2 {
+            font-size: 1.3rem;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h3>Delete Account Instructions</h3>
+        <ol>
+          <li>
+            <p><strong>After logging in, tap the icon in the Profile screen.</strong></p>
+            <img src="${req.protocol}://${req.get('host')}/images/delete_1.png" alt="Step 1">
+          </li>
+          <li>
+            <p><strong>Tap on Settings.</strong></p>
+            <img src="${req.protocol}://${req.get('host')}/images/delete_2.png" alt="Step 2">
+          </li>
+          <li>
+            <p><strong>Then tap on Delete.</strong></p>
+            <img src="${req.protocol}://${req.get('host')}/images/delete_3.png" alt="Step 3">
+          </li>
+        </ol>
+      </div>
+    </body>
+    </html>
+  `;
+  res.send(htmlContent);
+});

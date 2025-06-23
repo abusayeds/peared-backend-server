@@ -14,13 +14,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.bitProjectService = void 0;
 const http_status_1 = __importDefault(require("http-status"));
+const queryBuilder_1 = __importDefault(require("../../../builder/queryBuilder"));
 const AppError_1 = __importDefault(require("../../../errors/AppError"));
-const project_model_1 = __importDefault(require("../addProject/project-model"));
-const BitProject_model_1 = __importDefault(require("./BitProject.model"));
 const payment_model_1 = require("../../basic_modules/payment/payment.model");
-const providerModel_1 = require("../providerFeedback/providerModel");
 const user_model_1 = require("../../basic_modules/user/user.model");
+const project_model_1 = __importDefault(require("../addProject/project-model"));
 const messages_model_1 = require("../messages/messages.model");
+const providerModel_1 = require("../providerFeedback/providerModel");
+const BitProject_model_1 = __importDefault(require("./BitProject.model"));
 const createBitProject = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const isProject = yield project_model_1.default.findById(payload.projectId);
     if (!isProject) {
@@ -98,9 +99,6 @@ const bitProjectApprovedDB = (bitProjectId, email) => __awaiter(void 0, void 0, 
         throw new AppError_1.default(http_status_1.default.NOT_EXTENDED, 'Insufficient balance ');
     }
     isWallet.amount -= bitProject.price;
-    yield payment_model_1.PaymentModel.findOneAndUpdate({ sessionId: "admin1234" }, {
-        $inc: { amount: -bitProject.price },
-    }, { new: true });
     project.isApprove = true;
     bitProject.isComplete = 'running';
     yield project.save();
@@ -122,7 +120,7 @@ const confirmProjectDB = (projectId) => __awaiter(void 0, void 0, void 0, functi
         select: "userId projectCategory projectName street city postCode image ",
     }).populate({
         path: "providerId",
-        select: "name image",
+        select: "name image isActive updatedAt",
     });
     const user = yield user_model_1.UserModel.findById(currentProjects.projectId.userId);
     const conversation = yield messages_model_1.conversationModel.findOne({
@@ -134,28 +132,62 @@ const confirmProjectDB = (projectId) => __awaiter(void 0, void 0, void 0, functi
         currentProjects,
         conversationId: conversation._id,
         userName: user.name,
-        userImage: user.image
+        userImage: user.image,
+        isActive: user.isActive,
+        updatedAt: user.updatedAt
     };
 });
-const currentProjectsDB = (providerId) => __awaiter(void 0, void 0, void 0, function* () {
-    const currentProjects = yield BitProject_model_1.default.find({
-        isComplete: 'running',
-        providerId: providerId,
-    }).populate({
+// const currentProjectsDB = async (providerId: string) => {
+//     const currentProjects = await BitProjectModel.find({
+//         isComplete: 'running',
+//         providerId: providerId,
+//     }).populate({
+//         path: "projectId",
+//         select: "projectCategory street postCode image",
+//     })
+//     return currentProjects
+// }
+// const pendingsBitsDB = async (providerId: string) => {
+//     const pendingsBits = await BitProjectModel.find({
+//         isComplete: 'pending',
+//         providerId: providerId,
+//     }).populate({
+//         path: "projectId",
+//         select: "projectCategory street postCode image ",
+//     })
+//     return pendingsBits
+// }
+const currentProjectsDB = (providerId, query) => __awaiter(void 0, void 0, void 0, function* () {
+    const ProjectsQuery = new queryBuilder_1.default(BitProject_model_1.default.find({ isComplete: 'running', providerId: providerId }), query);
+    const { totalData } = yield ProjectsQuery.paginate(BitProject_model_1.default.find({ isComplete: 'running', providerId: providerId }));
+    const currentProjects = yield ProjectsQuery.modelQuery.populate({
         path: "projectId",
         select: "projectCategory street postCode image",
+    }).exec();
+    const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const pagination = ProjectsQuery.calculatePagination({
+        totalData,
+        currentPage,
+        limit,
     });
-    return currentProjects;
+    return { pagination, currentProjects };
 });
-const pendingsBitsDB = (providerId) => __awaiter(void 0, void 0, void 0, function* () {
-    const pendingsBits = yield BitProject_model_1.default.find({
-        isComplete: 'pending',
-        providerId: providerId,
-    }).populate({
+const pendingsBitsDB = (providerId, query) => __awaiter(void 0, void 0, void 0, function* () {
+    const ProjectsQuery = new queryBuilder_1.default(BitProject_model_1.default.find({ isComplete: 'pending', providerId: providerId }), query);
+    const { totalData } = yield ProjectsQuery.paginate(BitProject_model_1.default.find({ isComplete: 'pending', providerId: providerId }));
+    const pendingsBits = yield ProjectsQuery.modelQuery.populate({
         path: "projectId",
-        select: "projectCategory street postCode image ",
+        select: "projectCategory street postCode image",
+    }).exec();
+    const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const pagination = ProjectsQuery.calculatePagination({
+        totalData,
+        currentPage,
+        limit,
     });
-    return pendingsBits;
+    return { pagination, pendingsBits };
 });
 const ProjectOkByProviderDB = (bitProjectId, providerId) => __awaiter(void 0, void 0, void 0, function* () {
     const currentProjects = yield BitProject_model_1.default.findOne({

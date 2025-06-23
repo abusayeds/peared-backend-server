@@ -18,7 +18,7 @@ const sendEmail = (otp, email) => {
     const emailContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
   <h1 style="text-align: center; color: #2c3e50; font-family: 'Times New Roman', Times, serif;">
-    Mag<span style="color:#d35400; font-size: 0.9em;">y</span>
+    Peare<span style="color:#d35400; font-size: 0.9em;">d </span>
   </h1>
   
   <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);">
@@ -44,9 +44,7 @@ const sendEmail = (otp, email) => {
   <p style="font-size: 12px; color: #777; margin-top: 10px; text-align: center;">
     If you're having trouble copying the OTP, please try again.
   </p>
-</div>
-
-    `;
+</div>`;
     const receiver = {
         from: "khansourav58@gmail.com",
         to: email,

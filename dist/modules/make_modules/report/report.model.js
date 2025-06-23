@@ -36,6 +36,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.reportModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const ReportSchema = new mongoose_1.Schema({
+    bitProjectId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true,
+        ref: "BitProject"
+    },
     repoterId: {
         type: mongoose_1.Schema.Types.ObjectId,
         required: true,

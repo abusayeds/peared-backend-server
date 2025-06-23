@@ -29,7 +29,6 @@ const notification_model_1 = require("./notification.model");
 //     return { pagination, data, };
 // }
 const getMyNotification = (userId, query) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(userId);
     const notificationQuery = new queryBuilder_1.default(notification_model_1.NotificationModel.find({ userId: userId }), query).sort();
     const { totalData } = yield notificationQuery.paginate(notification_model_1.NotificationModel.find({ userId: userId }));
     const notifications = yield notificationQuery.modelQuery.exec();

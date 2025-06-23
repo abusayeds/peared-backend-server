@@ -3,10 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const multer_1 = __importDefault(require("multer"));
-const AppError_1 = __importDefault(require("../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
+const multer_1 = __importDefault(require("multer"));
 const config_1 = require("../config");
+const AppError_1 = __importDefault(require("../errors/AppError"));
 const UPLOAD_PATH = config_1.UPLOAD_FOLDER || "public/images";
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const storage = multer_1.default.diskStorage({
@@ -32,7 +32,9 @@ const uploadFiles = (0, multer_1.default)({
     limits: { fileSize: MAX_FILE_SIZE },
 }).fields([
     { name: "image", maxCount: 5 },
-    { name: "certificate", maxCount: 5 }
+    { name: "certificate", maxCount: 5 },
+    { name: "backgroundCertificat", maxCount: 1 },
+    { name: "oshaCertificat", maxCount: 1 }
 ]);
 const handleFileUpload = (req, res, next) => {
     uploadFiles(req, res, (err) => {
@@ -48,6 +50,20 @@ const handleFileUpload = (req, res, next) => {
                 certificatePaths.push(`/images/${file.filename}`);
             });
             req.body.certificate = certificatePaths;
+        }
+        if (req.files && req.files.oshaCertificat && req.files.oshaCertificat.length > 0) {
+            const oshaCertificat = req.files.oshaCertificat[0];
+            if (oshaCertificat.mimetype !== 'application/pdf') {
+                return next(new AppError_1.default(http_status_1.default.BAD_REQUEST, 'PDF only for OSAH Certificat.'));
+            }
+            req.body.oshaCertificat = `/images/${oshaCertificat.filename}`;
+        }
+        if (req.files && req.files.backgroundCertificat && req.files.backgroundCertificat.length > 0) {
+            const backgroundCertificat = req.files.backgroundCertificat[0];
+            if (backgroundCertificat.mimetype !== 'application/pdf') {
+                return next(new AppError_1.default(http_status_1.default.BAD_REQUEST, 'PDF only for Background Certificat.'));
+            }
+            req.body.backgroundCertificat = `/images/${backgroundCertificat.filename}`;
         }
         next();
     });

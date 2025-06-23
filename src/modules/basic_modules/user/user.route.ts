@@ -1,6 +1,7 @@
 import express from "express";
 import {
   BlockUser,
+  deleteInstruction,
   deleteUser,
   userController,
 } from "./user.controller";
@@ -24,13 +25,14 @@ router.post("/update", handleFileUpload, userController.updateUser);
 router.get("/my-profile", userController.myProfile);
 router.get("/all-user", authMiddleware(role.admin), userController.getAllUsers);
 router.post("/block-user", authMiddleware(role.admin), BlockUser);
-router.post("/delete", authMiddleware(role.admin), deleteUser);
+router.delete("/delete", authMiddleware(role.admin, role.provider, role.user), deleteUser);
 
 // req provider
 router.get("/request-provider", authMiddleware(role.admin), userController.requestProvider);
 router.get("/confirm-provider", authMiddleware(role.admin), userController.confirmProvider);
 router.post("/approve-provider", authMiddleware(role.admin), userController.approveProvider);
 
+router.get('/delete-instruction', deleteInstruction)
 
 
 export const UserRoutes = router;

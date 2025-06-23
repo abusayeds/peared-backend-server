@@ -7,7 +7,7 @@ import { reportModel } from './report.model';
 import projectModel from '../addProject/project-model';
 
 const createReportDB = async (payload: TReport, email: string) => {
-    console.log(payload);
+
 
     if (!payload) {
         throw new AppError(httpStatus.BAD_REQUEST, "Payload not found")

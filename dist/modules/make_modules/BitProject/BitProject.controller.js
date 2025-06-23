@@ -18,36 +18,53 @@ const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const decoded_1 = require("../../../middlewares/decoded");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
+const socket_1 = require("../../../utils/socket");
+const payment_controller_1 = require("../../basic_modules/payment/payment.controller");
+const user_model_1 = require("../../basic_modules/user/user.model");
+const project_model_1 = __importDefault(require("../addProject/project-model"));
 const messages_model_1 = require("../messages/messages.model");
 const BitProject_model_1 = __importDefault(require("./BitProject.model"));
 const BitProject_service_1 = require("./BitProject.service");
 const createBitProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
     const userId = decoded.user._id;
+    const email = decoded.user.email;
+    const provider = yield user_model_1.UserModel.findById(userId);
+    if (!provider) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'provider not found');
+    }
+    if (provider.role === "provider" && provider.verifiedSkillset === false) {
+        const providerData = { name: provider.name, providerId: provider._id, email: provider.email, role: 'provider', };
+        const { url } = yield payment_controller_1.paymentController.createCheckoutSession(email, 30, providerData);
+        (0, sendResponse_1.default)(res, {
+            statusCode: http_status_1.default.OK,
+            success: true,
+            message: "Please pay $30 ",
+            data: url
+        });
+        return;
+    }
     const existbits = yield BitProject_model_1.default.findOne({
         projectId: req.body.projectId,
-        providerId: userId,
+        providerId: userId
     });
     if (existbits) {
         throw new AppError_1.default(400, "You have already bitten.");
     }
     const payload = Object.assign(Object.assign({}, req.body), { providerId: userId });
     const result = yield BitProject_service_1.bitProjectService.createBitProject(payload);
-    // Send response first
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: 'Project bit added!',
-        data: result,
+        message: 'Project bit added ! ',
+        data: result
     });
-    // Execute the notification logic after the response is sent
-    // const project: any = await projectModel.findById(result.providerId);
-    // const user = await UserModel.findById(project.userId);
-    // const provider = await UserModel.findById(result.providerId);
-    // await sendNotification({
-    //     userId: user._id,
-    //     message: `${provider.name} bit your project!`,
-    // });
+    const project = yield project_model_1.default.findById(result.projectId);
+    const user = yield user_model_1.UserModel.findById(project.userId);
+    yield (0, socket_1.sendNotification)({
+        userId: user._id,
+        message: `${provider.name} bit your project !`,
+    });
 }));
 const singleProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { bitProjectId } = req.params;
@@ -74,6 +91,7 @@ const bitProjectApproved = (0, catchAsync_1.default)((req, res) => __awaiter(voi
     const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
     const email = decoded.user.email;
     const userId = decoded.user._id;
+    const name = decoded.user.name;
     const bitProjectApproved = yield BitProject_service_1.bitProjectService.bitProjectApprovedDB(bitProjectId, email);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
@@ -89,11 +107,15 @@ const bitProjectApproved = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         });
         yield conversation.save();
     }
+    yield (0, socket_1.sendNotification)({
+        userId: bitProjectApproved.providerId,
+        message: `${name} accept your Bits !`,
+    });
 }));
 const currentProjects = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
     const providerId = decoded.user._id;
-    const currentBitProjects = yield BitProject_service_1.bitProjectService.currentProjectsDB(providerId);
+    const currentBitProjects = yield BitProject_service_1.bitProjectService.currentProjectsDB(providerId, req.query);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -104,7 +126,7 @@ const currentProjects = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
 const pendingsBits = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
     const providerId = decoded.user._id;
-    const pendingBitProjects = yield BitProject_service_1.bitProjectService.pendingsBitsDB(providerId);
+    const pendingBitProjects = yield BitProject_service_1.bitProjectService.pendingsBitsDB(providerId, req.query);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

@@ -37,8 +37,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OTPModel = exports.UserModel = exports.PendingUserModel = void 0;
-const mongoose_1 = __importStar(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const mongoose_1 = __importStar(require("mongoose"));
 const PendingUserSchema = new mongoose_1.Schema({
     email: { type: String, required: true, unique: true, trim: true },
     name: { type: String, required: true, trim: true },
@@ -59,13 +59,13 @@ const UserSchema = new mongoose_1.Schema({
     address: { type: String, trim: true, required: false },
     city: { type: String, trim: true, required: false },
     image: { type: String, trim: true, default: "", required: false },
+    verifiedSkillset: { type: Boolean, default: false, required: false },
+    oshaCertificat: { type: String, trim: true, default: "", required: false },
+    backgroundCertificat: { type: String, trim: true, default: "", required: false },
     certificate: {
         type: [String], trim: true, required: false, default: undefined
     },
-    postalCode: {
-        type: String,
-        required: false
-    },
+    postalCode: { type: String, required: false, trim: true, match: [/^\d{5}$/, "Post Code must be exactly 5 digits"] },
     role: {
         type: String,
         enum: ["admin", "user", "provider"],
@@ -88,6 +88,10 @@ const UserSchema = new mongoose_1.Schema({
         type: Boolean, required: false, default: undefined
     },
     isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+    isActive: {
         type: Boolean,
         default: false,
     },

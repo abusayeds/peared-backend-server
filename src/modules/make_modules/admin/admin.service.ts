@@ -87,7 +87,6 @@ const adminIncomeDB = async (year: number) => {
 };
 const adminTransactionDB = async (year: number) => {
 
-
     const result = await paymentHistoryModel.aggregate([
         {
             $match: {

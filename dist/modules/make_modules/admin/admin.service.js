@@ -16,8 +16,9 @@ exports.adminService = void 0;
 const payment_model_1 = require("../../basic_modules/payment/payment.model");
 const user_model_1 = require("../../basic_modules/user/user.model");
 const project_model_1 = __importDefault(require("../addProject/project-model"));
-const adminDashBoard = (email) => __awaiter(void 0, void 0, void 0, function* () {
-    const Earnings = yield payment_model_1.PaymentModel.findOne({ customerEmail: email });
+const withdraw_model_1 = require("../withdraw/withdraw.model");
+const adminDashBoard = () => __awaiter(void 0, void 0, void 0, function* () {
+    const Earnings = yield payment_model_1.PaymentModel.findOne({ sessionId: "admin123" });
     const project = yield project_model_1.default.find();
     const provider = yield user_model_1.UserModel.find({ role: 'provider' });
     const user = yield user_model_1.UserModel.find({ role: 'user' });
@@ -26,6 +27,19 @@ const adminDashBoard = (email) => __awaiter(void 0, void 0, void 0, function* ()
         project: project.length,
         user: user.length,
         provider: provider.length
+    };
+    return dashBoard;
+});
+const earningsDB = () => __awaiter(void 0, void 0, void 0, function* () {
+    const Earnings = yield payment_model_1.PaymentModel.findOne({ sessionId: "admin123" });
+    const totalIncome = yield payment_model_1.PaymentModel.findOne({ sessionId: "admin1234" });
+    const totalAmount = yield withdraw_model_1.withdrawModel.find();
+    console.log(totalAmount);
+    const total = totalAmount.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+    const dashBoard = {
+        earnings: Earnings.amount,
+        totalAmount: totalIncome.amount,
+        totalWithdrawAmount: total
     };
     return dashBoard;
 });
@@ -117,5 +131,6 @@ const adminTransactionDB = (year) => __awaiter(void 0, void 0, void 0, function*
 exports.adminService = {
     adminDashBoard,
     adminIncomeDB,
-    adminTransactionDB
+    adminTransactionDB,
+    earningsDB
 };

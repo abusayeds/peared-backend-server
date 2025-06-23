@@ -18,7 +18,7 @@ const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const withdraw_servise_1 = require("./withdraw.servise");
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const allWithWraw = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const allWithdraReq = yield withdraw_servise_1.withDarwService.allWithWrawDB();
+    const allWithdraReq = yield withdraw_servise_1.withDarwService.allWithWrawDB(req.query);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

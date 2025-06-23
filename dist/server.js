@@ -12,12 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const http_1 = __importDefault(require("http"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const DB_1 = __importDefault(require("./DB"));
 const app_1 = __importDefault(require("./app"));
 const config_1 = require("./config");
 const socket_1 = require("./utils/socket");
-const http_1 = __importDefault(require("http"));
 const server = http_1.default.createServer(app_1.default);
 (0, socket_1.initSocketIO)(server);
 function main() {
@@ -40,25 +40,23 @@ main().catch((error) => {
     console.error("Unhandled error in main:", error);
     process.exit(1);
 });
-process.on("unhandledRejection", (err) => {
-    console.error(`😈 unhandledRejection is detected, shutting down ...`, err);
-    if (server) {
-        server.close(() => {
-            process.exit(1);
-        });
-    }
-    else {
-        process.exit(1);
-    }
-});
-process.on("uncaughtException", (error) => {
-    console.error(`😈 uncaughtException is detected, shutting down ...`, error);
-    if (server) {
-        server.close(() => {
-            process.exit(1);
-        });
-    }
-    else {
-        process.exit(1);
-    }
-});
+// process.on("unhandledRejection", (err) => {
+//   console.error(`😈 unhandledRejection is detected, shutting down ...`, err);
+//   if (server) {
+//     server.close(() => {
+//       process.exit(1);
+//     });
+//   } else {
+//     process.exit(1);
+//   }
+// });
+// process.on("uncaughtException", (error) => {
+//   console.error(`😈 uncaughtException is detected, shutting down ...`, error);
+//   if (server) {
+//     server.close(() => {
+//       process.exit(1);
+//     });
+//   } else {
+//     process.exit(1);
+//   }
+// });

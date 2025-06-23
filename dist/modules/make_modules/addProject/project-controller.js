@@ -14,10 +14,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.projectController = void 0;
 const http_status_1 = __importDefault(require("http-status"));
+const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const decoded_1 = require("../../../middlewares/decoded");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const socket_1 = require("../../../utils/socket");
+const payment_controller_1 = require("../../basic_modules/payment/payment.controller");
 const payment_model_1 = require("../../basic_modules/payment/payment.model");
 const user_model_1 = require("../../basic_modules/user/user.model");
 const project_service_1 = require("./project-service");
@@ -56,7 +58,7 @@ const createProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 const myProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
     const userId = decoded.user._id;
-    const result = yield project_service_1.projectService.myProjectDB(userId);
+    const result = yield project_service_1.projectService.myProjectDB(userId, req.query);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -100,7 +102,8 @@ const boostProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
     });
 }));
 const allProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const allProject = yield project_service_1.projectService.allProjectDB();
+    const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
+    const allProject = yield project_service_1.projectService.allProjectDB(req.query, decoded.user);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -109,12 +112,40 @@ const allProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
     });
 }));
 const singleProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
+    const userId = decoded.user._id;
+    const email = decoded.user.email;
+    const provider = yield user_model_1.UserModel.findById(userId);
+    if (!provider) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'provider not found');
+    }
+    if (provider.role === "provider" && provider.verifiedSkillset === false) {
+        const providerData = { name: provider.name, providerId: provider._id, email: provider.email, role: 'provider', };
+        const { url } = yield payment_controller_1.paymentController.createCheckoutSession(email, 30, providerData);
+        (0, sendResponse_1.default)(res, {
+            statusCode: http_status_1.default.OK,
+            success: true,
+            message: "Please pay $30 ",
+            data: url
+        });
+        return;
+    }
     const { projectId } = req.params;
     const allProject = yield project_service_1.projectService.singleProjectDB(projectId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
         message: ' Get Single  Project ',
+        data: allProject
+    });
+}));
+const updateProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { projectId } = req.params;
+    const allProject = yield project_service_1.projectService.updateProjectDB(req.body, projectId);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Project update successfully ! ',
         data: allProject
     });
 }));
@@ -125,4 +156,5 @@ exports.projectController = {
     boostProject,
     allProject,
     singleProject,
+    updateProject
 };

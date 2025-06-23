@@ -19,7 +19,6 @@ import { reportRoute } from "../modules/make_modules/report/report. route";
 
 
 const router = express.Router();
-
 router.use("/api/v1/user", UserRoutes);
 router.use("/api/v1/terms", TermsRoutes);
 router.use("/api/v1/reportPolicy", ReportPolicyRoutes);

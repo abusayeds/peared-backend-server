@@ -13,14 +13,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.reportService = void 0;
-const report_model_1 = require("./report.model");
-const payment_model_1 = require("../../basic_modules/payment/payment.model");
-const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
+const AppError_1 = __importDefault(require("../../../errors/AppError"));
+const payment_model_1 = require("../../basic_modules/payment/payment.model");
+const BitProject_model_1 = __importDefault(require("../BitProject/BitProject.model"));
+const report_model_1 = require("./report.model");
+const project_model_1 = __importDefault(require("../addProject/project-model"));
 const createReportDB = (payload, email) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(payload);
     if (!payload) {
-        throw new AppError_1.default(http_status_1.default.BAD_GATEWAY, "Payload not found");
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "Payload not found");
+    }
+    const bitProject = yield BitProject_model_1.default.findById(payload.bitProjectId);
+    if (!bitProject) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, " bit project not found");
     }
     const isWallet = yield payment_model_1.PaymentModel.findOne({ customerEmail: email });
     if (!isWallet) {
@@ -42,8 +48,34 @@ const createReportDB = (payload, email) => __awaiter(void 0, void 0, void 0, fun
     return result;
 });
 const getReportAdminDB = () => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const getContact = yield report_model_1.reportModel.find().populate({
+            path: "repoterId",
+            select: "name email image",
+        });
+        return getContact;
+    }
+    catch (error) {
+        console.error("Error fetching contact messages:", error);
+        return [];
+    }
+});
+const singleReportBD = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const getReport = yield report_model_1.reportModel.findById(id).populate("bitProjectId").populate({
+        path: "repoterId",
+        select: "name email image service postalCode city address",
+    }).populate({
+        path: "userId",
+        select: "name email image service postalCode city address",
+    });
+    const projectImage = yield project_model_1.default.findById(getReport.bitProjectId.projectId);
+    const reportData = {
+        getReport, projectImage: projectImage.image
+    };
+    return reportData;
 });
 exports.reportService = {
     createReportDB,
-    getReportAdminDB
+    getReportAdminDB,
+    singleReportBD
 };

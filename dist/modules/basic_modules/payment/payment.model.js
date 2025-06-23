@@ -48,7 +48,7 @@ const paymentHistorySchema = new mongoose_1.default.Schema({
     },
     admin: {
         type: String,
-        required: true,
+        required: false,
     },
     email: {
         type: String,

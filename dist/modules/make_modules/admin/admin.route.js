@@ -10,6 +10,7 @@ const role_1 = require("../../../utils/role");
 const admin_controller_1 = require("./admin.controller");
 const router = express_1.default.Router();
 router.get("/dashboard", (0, auth_1.authMiddleware)(role_1.role.admin), admin_controller_1.adminController.adminDashboard);
+router.get("/earnings", (0, auth_1.authMiddleware)(role_1.role.admin), admin_controller_1.adminController.earnings);
 router.get("/income/:year", (0, auth_1.authMiddleware)(role_1.role.admin), admin_controller_1.adminController.adminIncome);
 router.get("/transaction/:year", (0, auth_1.authMiddleware)(role_1.role.admin), admin_controller_1.adminController.adminTransaction);
 exports.adminRoutes = router;

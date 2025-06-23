@@ -4,12 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const zod_1 = require("zod");
-const handleZodError_1 = __importDefault(require("../errors/handleZodError"));
-const handleValidationError_1 = __importDefault(require("../errors/handleValidationError"));
+const config_1 = require("../config");
+const AppError_1 = __importDefault(require("../errors/AppError"));
 const handleCastError_1 = __importDefault(require("../errors/handleCastError"));
 const handleDuplicateError_1 = __importDefault(require("../errors/handleDuplicateError"));
-const AppError_1 = __importDefault(require("../errors/AppError"));
-const config_1 = require("../config");
+const handleValidationError_1 = __importDefault(require("../errors/handleValidationError"));
+const handleZodError_1 = __importDefault(require("../errors/handleZodError"));
 const globalErrorHandler = (err, req, res, next) => {
     let statusCode = 500;
     let message = err.message || "something is wrong";

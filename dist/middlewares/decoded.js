@@ -12,11 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.tokenDecoded = void 0;
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const AppError_1 = __importDefault(require("../errors/AppError"));
+exports.socketTokenDecoded = exports.tokenDecoded = void 0;
 const http_status_1 = __importDefault(require("http-status"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = require("../config");
+const AppError_1 = __importDefault(require("../errors/AppError"));
 const tokenDecoded = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -27,3 +27,16 @@ const tokenDecoded = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     return { decoded, token };
 });
 exports.tokenDecoded = tokenDecoded;
+const socketTokenDecoded = (token) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!token || typeof token !== 'string') {
+        return { decoded: null, token };
+    }
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, config_1.JWT_SECRET_KEY);
+        return { decoded, token };
+    }
+    catch (error) {
+        return { decoded: null, token };
+    }
+});
+exports.socketTokenDecoded = socketTokenDecoded;

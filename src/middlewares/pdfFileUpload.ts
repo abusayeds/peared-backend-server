@@ -40,7 +40,6 @@ const handleFileUpload = (req: any, res: any, next: any) => {
     if (err) {
       return next(err);
     }
-
     if (req.files && req.files.image && req.files.image.length > 0) {
       req.body.image = `/images/${req.files.image[0].filename}`;
     }
@@ -51,6 +50,7 @@ const handleFileUpload = (req: any, res: any, next: any) => {
       });
       req.body.certificate = certificatePaths;
     }
+
     if (req.files && req.files.oshaCertificat && req.files.oshaCertificat.length > 0) {
       const oshaCertificat = req.files.oshaCertificat[0]
       if (oshaCertificat.mimetype !== 'application/pdf') {
@@ -58,6 +58,7 @@ const handleFileUpload = (req: any, res: any, next: any) => {
       }
       req.body.oshaCertificat = `/images/${oshaCertificat.filename}`;
     }
+
     if (req.files && req.files.backgroundCertificat && req.files.backgroundCertificat.length > 0) {
       const backgroundCertificat = req.files.backgroundCertificat[0];
       if (backgroundCertificat.mimetype !== 'application/pdf') {
@@ -65,6 +66,7 @@ const handleFileUpload = (req: any, res: any, next: any) => {
       }
       req.body.backgroundCertificat = `/images/${backgroundCertificat.filename}`;
     }
+
 
     next();
   });

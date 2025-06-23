@@ -17,15 +17,21 @@ const http_status_1 = __importDefault(require("http-status"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const admin_service_1 = require("./admin.service");
-const decoded_1 = require("../../../middlewares/decoded");
 const adminDashboard = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
-    const email = decoded.user.email;
-    const dashboard = yield admin_service_1.adminService.adminDashBoard(email);
+    const dashboard = yield admin_service_1.adminService.adminDashBoard();
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
         message: `Get dashboard`,
+        data: dashboard
+    });
+}));
+const earnings = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const dashboard = yield admin_service_1.adminService.earningsDB();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: `Get earnings`,
         data: dashboard
     });
 }));
@@ -52,5 +58,6 @@ const adminTransaction = (0, catchAsync_1.default)((req, res) => __awaiter(void 
 exports.adminController = {
     adminDashboard,
     adminIncome,
-    adminTransaction
+    adminTransaction,
+    earnings
 };

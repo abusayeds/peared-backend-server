@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userDelete = exports.userService = exports.saveOTP = exports.findUserById = exports.findUserByEmail = exports.generateOTP = exports.getStoredOTP = exports.hashPassword = exports.generateToken = void 0;
+exports.userDelete = exports.userService = exports.setUserInactive = exports.updateUserActivity = exports.saveOTP = exports.findUserById = exports.findUserByEmail = exports.generateOTP = exports.getStoredOTP = exports.hashPassword = exports.generateToken = exports.io = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const http_status_1 = __importDefault(require("http-status"));
@@ -21,7 +21,10 @@ const queryBuilder_1 = __importDefault(require("../../../builder/queryBuilder"))
 const config_1 = require("../../../config");
 const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const sendEmail_1 = require("./sendEmail");
+const user_conastant_1 = require("./user.conastant");
 const user_model_1 = require("./user.model");
+const socketMap = new Map();
+const userMap = new Map();
 const generateToken = (payload) => {
     return jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET_KEY, { expiresIn: "7d" });
 };
@@ -75,6 +78,12 @@ const createUserDB = (payload) => __awaiter(void 0, void 0, void 0, function* ()
 });
 const joinProviderDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const isUserRegistered = yield user_model_1.UserModel.findOne({ email: payload.email });
+    // if (!payload.oshaCertificat) {
+    //   throw new AppError(httpStatus.BAD_REQUEST, 'OshaCertificat is required')
+    // }
+    // if (!payload.backgroundCertificat) {
+    //   throw new AppError(httpStatus.BAD_REQUEST, 'Background Certificat is required')
+    // }
     const { password, confirmPassword } = payload;
     if (isUserRegistered) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "You already have an account.");
@@ -89,6 +98,9 @@ const loginDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield (0, exports.findUserByEmail)(payload.email);
     if (!user) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, "This account does not exist.");
+    }
+    if ((user === null || user === void 0 ? void 0 : user.isApproved) === false) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Your request is awaiting admin approval.');
     }
     if (user.isDeleted) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, "your account is deleted by admin.");
@@ -170,7 +182,7 @@ const myProfileDB = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     return user;
 });
 const allUserDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    const userQuery = new queryBuilder_1.default(user_model_1.UserModel.find({ role: "user" }), query).sort();
+    const userQuery = new queryBuilder_1.default(user_model_1.UserModel.find({ role: "user" }), query).search(user_conastant_1.userSearchField).search(user_conastant_1.userSearchField).filter().fields().sort();
     const { totalData } = yield userQuery.paginate(user_model_1.UserModel.find({ role: "user" }));
     const user = yield userQuery.modelQuery.exec();
     const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
@@ -183,7 +195,7 @@ const allUserDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
     return { pagination, user, };
 });
 const confirmProviderDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    const providerQuery = new queryBuilder_1.default(user_model_1.UserModel.find({ role: "provider", isApproved: true }), query).sort();
+    const providerQuery = new queryBuilder_1.default(user_model_1.UserModel.find({ role: "provider", isApproved: true }), query).search(user_conastant_1.userSearchField).sort();
     const { totalData } = yield providerQuery.paginate(user_model_1.UserModel.find({ role: "provider", isApproved: true }));
     const provider = yield providerQuery.modelQuery.exec();
     const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
@@ -196,7 +208,7 @@ const confirmProviderDB = (query) => __awaiter(void 0, void 0, void 0, function*
     return { pagination, provider, };
 });
 const requestProviderDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    const providerQuery = new queryBuilder_1.default(user_model_1.UserModel.find({ role: "provider", isApproved: false }), query).sort();
+    const providerQuery = new queryBuilder_1.default(user_model_1.UserModel.find({ role: "provider", isApproved: false }), query).search(user_conastant_1.userSearchField).sort();
     const { totalData } = yield providerQuery.paginate(user_model_1.UserModel.find({ role: "provider", isApproved: false }));
     const provider = yield providerQuery.modelQuery.exec();
     const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
@@ -216,7 +228,6 @@ const approveProviderDB = (payload) => __awaiter(void 0, void 0, void 0, functio
     if (payload.isApprove === true) {
         provider.isApproved = true;
         yield provider.save();
-        console.log(provider, 'true log');
         return true;
     }
     if (!payload.isApprovee) {
@@ -224,6 +235,29 @@ const approveProviderDB = (payload) => __awaiter(void 0, void 0, void 0, functio
         return false;
     }
 });
+// socket user Activity
+const updateUserActivity = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield user_model_1.UserModel.findByIdAndUpdate(userId, { isActive: true, }, { new: true });
+    }
+    catch (error) {
+        console.error('Error updating user activity:', error);
+    }
+});
+exports.updateUserActivity = updateUserActivity;
+const setUserInactive = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield user_model_1.UserModel.findByIdAndUpdate(userId, { isActive: false, }, { new: true });
+    }
+    catch (error) {
+        console.error('Error setting user inactive:', error);
+    }
+});
+exports.setUserInactive = setUserInactive;
+// export const userActivity = (socket: Socket, userId: string) => {
+//   updateUserActivity(userId);
+//   io.emit('user-status-updated', { isActive: true, lastActive: Date.now() });
+// }
 exports.userService = {
     createUserDB,
     // verifyOtpDB

@@ -20,7 +20,6 @@ const createProject = catchAsync(async (req, res) => {
     const projectData = { ...req.body, userId }
     const project = await projectService.createProjectDB(projectData, email)
     const admin = await UserModel.findOne({ role: "admin" });
-
     sendNotification({
         userId: admin._id,
         message: `${name} create a project !`,

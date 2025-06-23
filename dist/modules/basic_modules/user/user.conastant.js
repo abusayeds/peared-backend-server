@@ -1,4 +1,4 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchProject = void 0;
-exports.searchProject = ["projectName"];
+exports.userSearchField = void 0;
+exports.userSearchField = ["name"];

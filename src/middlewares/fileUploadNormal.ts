@@ -9,10 +9,11 @@ import { max_file_size, UPLOAD_FOLDER } from "../config";
 const UPLOAD_PATH = UPLOAD_FOLDER || "public/images";
 const MAX_FILE_SIZE = Number(max_file_size) || 5 * 1024 * 1024;
 
-const ALLOWED_FILE_TYPES = [".jpg", ".jpeg", ".png", ".xlsx",  ".xls",".csv",".pdf",".doc", ".docx",".mp3", ".wav",".ogg", ".mp4", ".avi", ".mov",".mkv",  ".webm", ".svg",
+const ALLOWED_FILE_TYPES = [".jpg", ".jpeg", ".png", ".xlsx", ".xls", ".csv", ".pdf", ".doc", ".docx", ".mp3", ".wav", ".ogg", ".mp4", ".avi", ".mov", ".mkv", ".webm", ".svg", "jfif",
 ];
 
-const storage = multer.diskStorage({ destination: function (req, file, cb) {  cb(null, UPLOAD_PATH); },
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) { cb(null, UPLOAD_PATH); },
   filename: function (
     req: Request,
     file: Express.Multer.File,
@@ -49,7 +50,7 @@ export const upload = multer({
     fileSize: MAX_FILE_SIZE,
   },
 });
- 
+
 
 
 

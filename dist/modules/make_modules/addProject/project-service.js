@@ -14,12 +14,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.projectService = void 0;
 const http_status_1 = __importDefault(require("http-status"));
+const queryBuilder_1 = __importDefault(require("../../../builder/queryBuilder"));
 const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const payment_model_1 = require("../../basic_modules/payment/payment.model");
 const BitProject_model_1 = __importDefault(require("../BitProject/BitProject.model"));
 const providerModel_1 = require("../providerFeedback/providerModel");
+const project_constant_1 = require("./project-constant");
 const project_model_1 = __importDefault(require("./project-model"));
 const createProjectDB = (payload, email) => __awaiter(void 0, void 0, void 0, function* () {
+    // if (!payload.oshaCertificate && !payload.backgroundCertificate) {
+    //     throw new AppError(
+    //         httpStatus.BAD_REQUEST,
+    //         'At least one certificate (OSHA or Background) is required.'
+    //     );
+    // }
     const isWallet = yield payment_model_1.PaymentModel.findOne({ customerEmail: email });
     if (!isWallet) {
         throw new AppError_1.default(http_status_1.default.PAYMENT_REQUIRED, 'Create a wallet account ');
@@ -33,8 +41,11 @@ const createProjectDB = (payload, email) => __awaiter(void 0, void 0, void 0, fu
     const project = yield project_model_1.default.create(payload);
     return project;
 });
-const myProjectDB = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const projects = yield project_model_1.default.find({ userId: userId });
+const myProjectDB = (userId, query) => __awaiter(void 0, void 0, void 0, function* () {
+    const projectQuery = new queryBuilder_1.default(project_model_1.default.find({ userId: userId }), query).sort().search(project_constant_1.searchProject).filter();
+    const { totalData } = yield projectQuery.paginate(project_model_1.default.find({ userId: userId }));
+    const projects = yield projectQuery.modelQuery.exec();
+    // const projects: TProject[] = await projectModel.find({ userId: userId });
     const expiredProjects = projects.filter(project => {
         return project.expiredDate && new Date(project.expiredDate.toString()).getTime() < new Date().getTime();
     });
@@ -46,7 +57,14 @@ const myProjectDB = (userId) => __awaiter(void 0, void 0, void 0, function* () {
         return project;
     });
     yield Promise.all(updatePayment);
-    return projects;
+    const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const pagination = projectQuery.calculatePagination({
+        totalData,
+        currentPage,
+        limit,
+    });
+    return { pagination, projects };
 });
 const bitProjectDB = (projectId) => __awaiter(void 0, void 0, void 0, function* () {
     const project = yield project_model_1.default.findById(projectId);
@@ -91,13 +109,57 @@ const boostProjctDB = (projectId, email) => __awaiter(void 0, void 0, void 0, fu
     yield project.save();
     return project;
 });
-const allProjectDB = () => __awaiter(void 0, void 0, void 0, function* () {
-    const project = yield project_model_1.default.find({ payment: true });
-    return project;
+const allProjectDB = (query, user) => __awaiter(void 0, void 0, void 0, function* () {
+    if (user.oshaCertificat && user.backgroundCertificat) {
+        const projectQuery = new queryBuilder_1.default(project_model_1.default.find({ payment: true, oshaCertificate: true, backgroundCertificate: true }), query).search(project_constant_1.searchProject).filter().sort();
+        const { totalData } = yield projectQuery.paginate(project_model_1.default.find({ payment: true, oshaCertificate: true, backgroundCertificate: true }));
+        const project = yield projectQuery.modelQuery.exec();
+        const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = projectQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, project };
+    }
+    else if (user.oshaCertificat) {
+        const projectQuery = new queryBuilder_1.default(project_model_1.default.find({ payment: true, oshaCertificate: true, }), query).search(project_constant_1.searchProject).filter().sort();
+        const { totalData } = yield projectQuery.paginate(project_model_1.default.find({ payment: true, oshaCertificate: true, }));
+        const project = yield projectQuery.modelQuery.exec();
+        const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = projectQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, project };
+    }
+    else if (user.backgroundCertificat) {
+        const projectQuery = new queryBuilder_1.default(project_model_1.default.find({ payment: true, backgroundCertificate: true }), query).search(project_constant_1.searchProject).filter().sort();
+        const { totalData } = yield projectQuery.paginate(project_model_1.default.find({ payment: true, backgroundCertificate: true }));
+        const project = yield projectQuery.modelQuery.exec();
+        const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = projectQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, project };
+    }
+    else {
+        return null;
+    }
 });
 const singleProjectDB = (projectId) => __awaiter(void 0, void 0, void 0, function* () {
     const SingleProject = yield project_model_1.default.findById(projectId);
     return SingleProject;
+});
+const updateProjectDB = (payload, projectId) => __awaiter(void 0, void 0, void 0, function* () {
+    const updatedProject = yield project_model_1.default.findByIdAndUpdate(projectId, payload, { new: true });
+    return updatedProject;
 });
 exports.projectService = {
     createProjectDB,
@@ -105,5 +167,6 @@ exports.projectService = {
     bitProjectDB,
     boostProjctDB,
     allProjectDB,
-    singleProjectDB
+    singleProjectDB,
+    updateProjectDB
 };

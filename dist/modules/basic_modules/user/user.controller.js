@@ -13,16 +13,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.BlockUser = exports.userController = void 0;
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const user_service_1 = require("./user.service");
-const user_model_1 = require("./user.model");
 const http_status_1 = __importDefault(require("http-status"));
-const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
-const AppError_1 = __importDefault(require("../../../errors/AppError"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = require("../../../config");
-const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
+const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const decoded_1 = require("../../../middlewares/decoded");
-const payment_controller_1 = require("../payment/payment.controller");
+const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
+const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
+const user_model_1 = require("./user.model");
+const user_service_1 = require("./user.service");
 const registerUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield user_service_1.userService.createUserDB(req.body);
     const responseData = {
@@ -51,13 +50,13 @@ const joinProvider = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
     }
     if (req.body.service.length === 0)
         throw new AppError_1.default(400, "Service is Required");
-    const providerData = Object.assign(Object.assign({}, req.body), { role: 'provider' });
-    const { url, } = yield payment_controller_1.paymentController.createCheckoutSession(req.body.email, 30, providerData);
+    const providerPayload = Object.assign(Object.assign({}, req.body), { role: "provider" });
+    const result = yield user_service_1.userService.joinProviderDB(providerPayload);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: "For Join as a Contractor pay $30 ",
-        data: url
+        message: "Provider ragistation completed",
+        data: result
     });
 }));
 // export const verifyOTP = catchAsync(async (req: Request, res: Response) => {
@@ -123,6 +122,9 @@ const forgotPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
 }));
 const verifyForgotPasswordOTP = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { otp } = req.body;
+    if (!otp) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'otp is required');
+    }
     const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
     const email = decoded.email;
     const forgot = decoded.forgot;

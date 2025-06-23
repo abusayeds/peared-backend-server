@@ -165,7 +165,6 @@ const providerWithdrawDB = async (payload: any, providerEmail: string) => {
     }
     const accountInfo = await stripe.accounts.retrieve(provider.accountId);
     if (!accountInfo.capabilities || accountInfo.capabilities.transfers !== 'active') {
-
         const accountLink = await stripe.accountLinks.create({
             account: provider.accountId,
             refresh_url: `https://yourdomain.com/payment-cancel`,

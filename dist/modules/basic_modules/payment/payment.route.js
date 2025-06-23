@@ -12,7 +12,7 @@ const router = express_1.default.Router();
 router.post('/', express_1.default.raw({ type: "application/json" }), payment_controller_1.paymentController.webhookController);
 router.post('/add-balance', (0, auth_1.authMiddleware)(role_1.role.user, role_1.role.provider), payment_controller_1.paymentController.addBalance);
 router.get("/my-wallat", (0, auth_1.authMiddleware)(role_1.role.user, role_1.role.provider), payment_controller_1.paymentController.myWallat);
-router.get("/my-payment-history", (0, auth_1.authMiddleware)(role_1.role.user), payment_controller_1.paymentController.paymentHistory);
+router.get("/my-payment-history", (0, auth_1.authMiddleware)(role_1.role.user, role_1.role.provider, role_1.role.admin), payment_controller_1.paymentController.paymentHistory);
 // withdraw rerquest 
 router.post("/provider-withdraw", (0, auth_1.authMiddleware)(role_1.role.provider), payment_controller_1.paymentController.providerWithdraw);
 router.post('/payByAdmin', (0, auth_1.authMiddleware)(role_1.role.provider));

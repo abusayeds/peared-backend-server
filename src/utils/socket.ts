@@ -22,11 +22,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
   console.log("Socket.IO server initialized!");
   io.on("connection", async (socket: Socket) => {
     const token = socket.handshake.query.token
-
-
     const { decoded }: any = await socketTokenDecoded(token)
-
-
     if (decoded?.user) {
       console.log("A user connected:", decoded?.user?.email);
       // io.emit('user-status-updated', { isActive: true, lastActive: Date.now() });
@@ -39,43 +35,15 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
     try {
       socket.on('joinConversation', (data) => {
         const { conversationId } = data;
-        console.log("On join conversation", data);
         socket.join(conversationId);
         try {
           conversationModel.findById(conversationId).populate({ path: "providerId", select: "isActive" }).populate({ path: "userId", select: "isActive" }).then((res: any) => {
             if (decoded.user.role === "provider") {
               io.emit("active-inactive", res.userId)
-              console.log('if', res.userId);
-
             } else {
               io.emit("active-inactive", res.providerId)
-              console.log('else', res.providerId);
             }
           })
-          // const chat = myConversation({ chatId: conversationId }) as unknown as {
-          //   _id: string;
-          //   projectId: string;
-          //   providerId: {
-          //     _id: string;
-          //     isActive: Boolean
-          //   };
-          //   userId: {
-          //     _id: string;
-          //     isActive: Boolean
-          //   };
-          //   createdAt: Date;
-          //   updatedAt: Date;
-          //   __v: number
-          // }
-          // console.log(chat);
-          // if (decoded.user.role === "provider") {
-          //   io.emit("active-inactive", chat.userId)
-          //   console.log('if', chat.userId);
-
-          // } else {
-          //   io.emit("active-inactive", chat.providerId)
-          //   console.log('else', chat.providerId);
-          // }
         } catch (error) {
           console.error("Error retrieving conversation data:", error);
         }
@@ -126,10 +94,8 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
         console.log(decoded?.user?.email, "just disconnected");
       }
       io.emit("active-inactive", { userId: decoded?.user?._id, isActive: false })
-
     });
   });
-
 };
 
 export const sendNotification = async (message: any) => {

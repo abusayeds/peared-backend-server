@@ -10,7 +10,6 @@ import { UserModel } from "../user/user.model";
 import { webhookService } from "./payment.service";
 export const stripe = require("stripe")(STRIPE_SECRET_KEY);
 const createCheckoutSession = async (customerEmail: string, amount: number, projectData?: any) => {
-
   if (!customerEmail) {
     throw new AppError(httpStatus.BAD_REQUEST, "customerEmail is requred !")
   }
@@ -29,8 +28,8 @@ const createCheckoutSession = async (customerEmail: string, amount: number, proj
       quantity: 1,
     }],
     customer_email: customerEmail,
-    success_url: `https://peared-client.vercel.app/paymentSuccess`,
-    cancel_url: `https://peared-client.vercel.app/payment-cancel`,
+    success_url: `https://maggy-client-sayed-server.sarv.live/paymentSuccess`,
+    cancel_url: `https://maggy-client-sayed-server.sarv.live/payment-cancel`,
     metadata: {
       customerEmail,
       amount: amount,
@@ -94,7 +93,7 @@ const myWallat = catchAsync(async (req, res) => {
 });
 const paymentHistory = catchAsync(async (req, res) => {
   const { decoded }: any = await tokenDecoded(req, res)
-  console.log(decoded);
+
 
   const email = decoded.user.email;
   const role = decoded.user.role
@@ -112,10 +111,6 @@ const paymentHistory = catchAsync(async (req, res) => {
 
 
 
-
-
-
-
 const providerWithdraw = catchAsync(async (req, res) => {
   const { decoded }: any = await tokenDecoded(req, res)
   const email = decoded.user.email;
@@ -130,7 +125,7 @@ const providerWithdraw = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: ' writhdraw request sent ! ',
+    message: ' Writhdraw request sent ! ',
     data: data
   });
 })

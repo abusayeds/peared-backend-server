@@ -13,14 +13,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.paymentController = exports.stripe = void 0;
-const config_1 = require("../../../config");
-const payment_service_1 = require("./payment.service");
-const decoded_1 = require("../../../middlewares/decoded");
-const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
-const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
+const config_1 = require("../../../config");
+const AppError_1 = __importDefault(require("../../../errors/AppError"));
+const decoded_1 = require("../../../middlewares/decoded");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
+const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const user_model_1 = require("../user/user.model");
+const payment_service_1 = require("./payment.service");
 exports.stripe = require("stripe")(config_1.STRIPE_SECRET_KEY);
 const createCheckoutSession = (customerEmail, amount, projectData) => __awaiter(void 0, void 0, void 0, function* () {
     if (!customerEmail) {
@@ -41,8 +41,8 @@ const createCheckoutSession = (customerEmail, amount, projectData) => __awaiter(
                 quantity: 1,
             }],
         customer_email: customerEmail,
-        success_url: `http://10.0.80.100:3000/paymentSuccess`,
-        cancel_url: `https://yourdomain.com/payment-cancel`,
+        success_url: `https://peared-client.vercel.app/paymentSuccess`,
+        cancel_url: `https://peared-client.vercel.app/payment-cancel`,
         metadata: {
             customerEmail,
             amount: amount,
@@ -99,8 +99,10 @@ const myWallat = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 
 }));
 const paymentHistory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
+    console.log(decoded);
     const email = decoded.user.email;
-    const paymentHistory = yield payment_service_1.webhookService.paymentHistoryDB(email);
+    const role = decoded.user.role;
+    const paymentHistory = yield payment_service_1.webhookService.paymentHistoryDB(email, req.query, role);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -116,12 +118,12 @@ const providerWithdraw = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         !Number.isInteger(req.body.amount)) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Amount is required, must be greater than 0, and should be an integer.');
     }
-    const url = yield payment_service_1.webhookService.providerWithdrawDB(req.body, email);
+    const data = yield payment_service_1.webhookService.providerWithdrawDB(req.body, email);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: ' writhdraw kaj choltaca ',
-        data: url
+        message: ' writhdraw request sent ! ',
+        data: data
     });
 }));
 exports.paymentController = {

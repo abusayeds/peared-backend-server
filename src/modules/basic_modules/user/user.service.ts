@@ -348,9 +348,6 @@ export const
 
 
 
-export const userDelete = async (id: string): Promise<void> => {
-  await UserModel.findByIdAndUpdate(id, { isDeleted: true });
-};
 
 
 

@@ -13,11 +13,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.webhookService = void 0;
+const user_model_1 = require("./../user/user.model");
 const http_status_1 = __importDefault(require("http-status"));
+const queryBuilder_1 = __importDefault(require("../../../builder/queryBuilder"));
 const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const withdraw_model_1 = require("../../make_modules/withdraw/withdraw.model");
-const user_model_1 = require("../user/user.model");
-const user_service_1 = require("../user/user.service");
 const payment_constant_1 = require("./payment.constant");
 const payment_controller_1 = require("./payment.controller");
 const payment_model_1 = require("./payment.model");
@@ -39,11 +39,7 @@ function processPayment(event) {
         if (payment_status === 'completed') {
             const customerEmail = session.metadata.customerEmail;
             const isExistPayment = yield payment_model_1.PaymentModel.findOne({ customerEmail });
-            if (isExistPayment) {
-                yield payment_model_1.PaymentModel.findOneAndUpdate({ customerEmail }, { $inc: { amount: session.metadata.amount }, }, { new: true });
-                yield payment_model_1.PaymentModel.findOneAndUpdate({ sessionId: "admin1234" }, { $inc: { amount: session.metadata.amount }, }, { new: true });
-            }
-            else if (projectData.role === 'provider') {
+            if (projectData.role === 'provider') {
                 yield payment_model_1.PaymentModel.create({
                     sessionId: session.id,
                     customerEmail: session.metadata.customerEmail,
@@ -51,6 +47,10 @@ function processPayment(event) {
                     paymentStatus: "completed"
                 });
                 joinProvider(event);
+            }
+            else if (isExistPayment) {
+                yield payment_model_1.PaymentModel.findOneAndUpdate({ customerEmail }, { $inc: { amount: session.metadata.amount }, }, { new: true });
+                yield payment_model_1.PaymentModel.findOneAndUpdate({ sessionId: "admin1234" }, { $inc: { amount: session.metadata.amount }, }, { new: true });
             }
             else {
                 yield payment_model_1.PaymentModel.create({
@@ -86,13 +86,14 @@ function joinProvider(event) {
             }, { new: true });
             const projectData = JSON.parse(session.metadata.projectData);
             yield payment_model_1.paymentHistoryModel.create({
-                historyName: `${projectData.name}  join`,
+                historyName: `${projectData.name}  provider pay `,
                 email: projectData.email,
                 admin: 'admin123',
                 balance: session.metadata.amount,
                 paymentType: "deposit"
             });
-            yield user_service_1.userService.joinProviderDB(projectData);
+            yield user_model_1.UserModel.findByIdAndUpdate(projectData.providerId, { verifiedSkillset: true }, { new: true });
+            // await userService.joinProviderDB(projectData);
         }
         catch (error) {
             throw new AppError_1.default(400, `${error}`);
@@ -103,9 +104,38 @@ const myWallatDB = (email) => __awaiter(void 0, void 0, void 0, function* () {
     const wallet = yield payment_model_1.PaymentModel.findOne({ customerEmail: email });
     return wallet;
 });
-const paymentHistoryDB = (email) => __awaiter(void 0, void 0, void 0, function* () {
-    const paymentHistory = yield payment_model_1.paymentHistoryModel.find({ email: email });
-    return paymentHistory;
+const paymentHistoryDB = (email, query, role) => __awaiter(void 0, void 0, void 0, function* () {
+    '';
+    if (role === 'admin') {
+        const paymentHistoryQuery = new queryBuilder_1.default(payment_model_1.paymentHistoryModel.find({
+            paymentType: "withdraw"
+        }), query).sort();
+        const { totalData } = yield paymentHistoryQuery.paginate(payment_model_1.paymentHistoryModel.find({
+            paymentType: "withdraw"
+        }));
+        const paymentHistory = yield paymentHistoryQuery.modelQuery.exec();
+        const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = paymentHistoryQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, paymentHistory };
+    }
+    else {
+        const paymentHistoryQuery = new queryBuilder_1.default(payment_model_1.paymentHistoryModel.find({ email: email }), query).sort();
+        const { totalData } = yield paymentHistoryQuery.paginate(payment_model_1.paymentHistoryModel.find({ email: email }));
+        const paymentHistory = yield paymentHistoryQuery.modelQuery.exec();
+        const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = paymentHistoryQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, paymentHistory };
+    }
 });
 const providerWithdrawDB = (payload, providerEmail) => __awaiter(void 0, void 0, void 0, function* () {
     const wallet = yield payment_model_1.PaymentModel.findOne({
@@ -120,7 +150,7 @@ const providerWithdrawDB = (payload, providerEmail) => __awaiter(void 0, void 0,
     let provider = yield user_model_1.UserModel.findOne({ email: providerEmail });
     if (!(provider === null || provider === void 0 ? void 0 : provider.accountId)) {
         const account = yield payment_controller_1.stripe.accounts.create({
-            type: 'django',
+            type: 'express',
             email: provider === null || provider === void 0 ? void 0 : provider.email,
         });
         provider = yield user_model_1.UserModel.findOneAndUpdate({ email: providerEmail }, { accountId: account.id }, { new: true });
@@ -139,6 +169,11 @@ const providerWithdrawDB = (payload, providerEmail) => __awaiter(void 0, void 0,
         providerId: provider._id,
         amount: payload.amount,
     });
+    // await PaymentModel.findOneAndUpdate(
+    //     { customerEmail }, { $inc: { amount: -payload.amount }, }, { new: true }
+    // );
+    wallet.amount -= payload.amount;
+    yield wallet.save();
     return { success: true };
 });
 exports.webhookService = {
