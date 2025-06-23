@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUser = exports.BlockUser = exports.userController = void 0;
+exports.deleteInstruction = exports.deleteUser = exports.BlockUser = exports.userController = void 0;
 const http_status_1 = __importDefault(require("http-status"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = require("../../../config");
@@ -297,20 +297,105 @@ exports.BlockUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
     });
 }));
 exports.deleteUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const id = (_a = req.query) === null || _a === void 0 ? void 0 : _a.id;
-    const user = yield (0, user_service_1.findUserById)(id);
+    const { decoded, } = yield (0, decoded_1.tokenDecoded)(req, res);
+    const userId = decoded.user._id;
+    const user = yield user_model_1.UserModel.findById(userId);
     if (!user) {
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "user not found .");
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "User not found.");
     }
-    if (user.isDeleted) {
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "user  is already deleted.");
-    }
-    yield (0, user_service_1.userDelete)(id);
-    (0, sendResponse_1.default)(res, {
+    yield user_model_1.UserModel.findByIdAndDelete(userId);
+    // Uncomment this when you're ready to use the notification function
+    return (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
         message: "user deleted successfully",
         data: null,
     });
+}));
+exports.deleteInstruction = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Delete Account Instructions</title>
+      <style>
+        body {
+          background: #f7fafc;
+          margin: 0;
+          padding: 0;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .container {
+          background: #fff;
+          border-radius: 16px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+          padding: 32px 24px;
+          max-width: 420px;
+          width: 100%;
+          font-family: 'Segoe UI', Arial, sans-serif;
+          text-align: center;
+        }
+        h3 {
+          color: #1a8f3c;
+          margin-bottom: 18px;
+          font-size: 2rem;
+          letter-spacing: 1px;
+        }
+        ol {
+          padding-left: 0;
+          list-style-position: inside;
+          margin: 0;
+        }
+        li {
+          margin-bottom: 28px;
+          font-size: 1.08rem;
+        }
+        strong {
+          color: #222;
+        }
+        img {
+          display: block;
+          margin: 14px auto 0 auto;
+          max-width: 90%;
+          border-radius: 8px;
+          border: 1.5px solid #e0e0e0;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        @media (max-width: 600px) {
+          .container {
+            padding: 18px 4px;
+          }
+          h2 {
+            font-size: 1.3rem;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h3>Delete Account Instructions</h3>
+        <ol>
+          <li>
+            <p><strong>After logging in, tap the icon in the Profile screen.</strong></p>
+            <img src="${req.protocol}://${req.get('host')}/images/delete_1.png" alt="Step 1">
+          </li>
+          <li>
+            <p><strong>Tap on Settings.</strong></p>
+            <img src="${req.protocol}://${req.get('host')}/images/delete_2.png" alt="Step 2">
+          </li>
+          <li>
+            <p><strong>Then tap on Delete.</strong></p>
+            <img src="${req.protocol}://${req.get('host')}/images/delete_3.png" alt="Step 3">
+          </li>
+        </ol>
+      </div>
+    </body>
+    </html>
+  `;
+    res.send(htmlContent);
 }));

@@ -77,42 +77,16 @@ const initSocketIO = (server) => __awaiter(void 0, void 0, void 0, function* () 
         try {
             socket.on('joinConversation', (data) => {
                 const { conversationId } = data;
-                console.log("On join conversation", data);
                 socket.join(conversationId);
                 try {
                     messages_model_1.conversationModel.findById(conversationId).populate({ path: "providerId", select: "isActive" }).populate({ path: "userId", select: "isActive" }).then((res) => {
                         if (decoded.user.role === "provider") {
                             exports.io.emit("active-inactive", res.userId);
-                            console.log('if', res.userId);
                         }
                         else {
                             exports.io.emit("active-inactive", res.providerId);
-                            console.log('else', res.providerId);
                         }
                     });
-                    // const chat = myConversation({ chatId: conversationId }) as unknown as {
-                    //   _id: string;
-                    //   projectId: string;
-                    //   providerId: {
-                    //     _id: string;
-                    //     isActive: Boolean
-                    //   };
-                    //   userId: {
-                    //     _id: string;
-                    //     isActive: Boolean
-                    //   };
-                    //   createdAt: Date;
-                    //   updatedAt: Date;
-                    //   __v: number
-                    // }
-                    // console.log(chat);
-                    // if (decoded.user.role === "provider") {
-                    //   io.emit("active-inactive", chat.userId)
-                    //   console.log('if', chat.userId);
-                    // } else {
-                    //   io.emit("active-inactive", chat.providerId)
-                    //   console.log('else', chat.providerId);
-                    // }
                 }
                 catch (error) {
                     console.error("Error retrieving conversation data:", error);

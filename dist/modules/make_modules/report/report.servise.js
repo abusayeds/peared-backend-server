@@ -20,7 +20,6 @@ const BitProject_model_1 = __importDefault(require("../BitProject/BitProject.mod
 const report_model_1 = require("./report.model");
 const project_model_1 = __importDefault(require("../addProject/project-model"));
 const createReportDB = (payload, email) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(payload);
     if (!payload) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "Payload not found");
     }

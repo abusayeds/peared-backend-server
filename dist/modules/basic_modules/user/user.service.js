@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userDelete = exports.userService = exports.setUserInactive = exports.updateUserActivity = exports.saveOTP = exports.findUserById = exports.findUserByEmail = exports.generateOTP = exports.getStoredOTP = exports.hashPassword = exports.generateToken = exports.io = void 0;
+exports.userService = exports.setUserInactive = exports.updateUserActivity = exports.saveOTP = exports.findUserById = exports.findUserByEmail = exports.generateOTP = exports.getStoredOTP = exports.hashPassword = exports.generateToken = exports.io = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const http_status_1 = __importDefault(require("http-status"));
@@ -275,7 +275,3 @@ exports.userService = {
     confirmProviderDB,
     approveProviderDB
 };
-const userDelete = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    yield user_model_1.UserModel.findByIdAndUpdate(id, { isDeleted: true });
-});
-exports.userDelete = userDelete;

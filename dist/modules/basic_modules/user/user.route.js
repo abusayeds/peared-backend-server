@@ -24,9 +24,10 @@ router.post("/update", pdfFileUpload_1.default, user_controller_1.userController
 router.get("/my-profile", user_controller_1.userController.myProfile);
 router.get("/all-user", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.userController.getAllUsers);
 router.post("/block-user", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.BlockUser);
-router.post("/delete", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.deleteUser);
+router.delete("/delete", (0, auth_1.authMiddleware)(role_1.role.admin, role_1.role.provider, role_1.role.user), user_controller_1.deleteUser);
 // req provider
 router.get("/request-provider", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.userController.requestProvider);
 router.get("/confirm-provider", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.userController.confirmProvider);
 router.post("/approve-provider", (0, auth_1.authMiddleware)(role_1.role.admin), user_controller_1.userController.approveProvider);
+router.get('/delete-instruction', user_controller_1.deleteInstruction);
 exports.UserRoutes = router;

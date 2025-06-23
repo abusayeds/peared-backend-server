@@ -41,8 +41,8 @@ const createCheckoutSession = (customerEmail, amount, projectData) => __awaiter(
                 quantity: 1,
             }],
         customer_email: customerEmail,
-        success_url: `https://peared-client.vercel.app/paymentSuccess`,
-        cancel_url: `https://peared-client.vercel.app/payment-cancel`,
+        success_url: `https://maggy-client-sayed-server.sarv.live/paymentSuccess`,
+        cancel_url: `https://maggy-client-sayed-server.sarv.live/payment-cancel`,
         metadata: {
             customerEmail,
             amount: amount,
@@ -99,7 +99,6 @@ const myWallat = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 
 }));
 const paymentHistory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
-    console.log(decoded);
     const email = decoded.user.email;
     const role = decoded.user.role;
     const paymentHistory = yield payment_service_1.webhookService.paymentHistoryDB(email, req.query, role);
@@ -122,7 +121,7 @@ const providerWithdraw = (0, catchAsync_1.default)((req, res) => __awaiter(void 
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: ' writhdraw request sent ! ',
+        message: ' Writhdraw request sent ! ',
         data: data
     });
 }));

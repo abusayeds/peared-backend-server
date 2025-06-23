@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMyNotification = void 0;
+exports.NotificationFalseCount = exports.getMyNotification = void 0;
 const http_status_1 = __importDefault(require("http-status"));
 const decoded_1 = require("../../../middlewares/decoded");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
@@ -29,5 +29,16 @@ exports.getMyNotification = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         message: "Get all notifications successfully.",
         data: result
     });
-    yield notification_model_1.NotificationModel.updateMany({ status: "admin", seen: false }, { $set: { seen: true } });
+    yield notification_model_1.NotificationModel.updateMany({ userId: { $in: userId }, seen: false }, { $set: { seen: true } });
+}));
+exports.NotificationFalseCount = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
+    const userId = decoded.user._id;
+    const result = yield notification_model_1.NotificationModel.find({ userId: userId, seen: false });
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Get all notifications successfully.",
+        data: result.length
+    });
 }));

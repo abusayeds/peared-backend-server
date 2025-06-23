@@ -8,4 +8,5 @@ const express_1 = __importDefault(require("express"));
 const notification_controller_1 = require("./notification.controller");
 const router = express_1.default.Router();
 router.get("/", notification_controller_1.getMyNotification);
+router.get("/unseen", notification_controller_1.NotificationFalseCount);
 exports.NotificationRoutes = router;
