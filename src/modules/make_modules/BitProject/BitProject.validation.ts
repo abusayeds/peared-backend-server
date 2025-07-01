@@ -25,6 +25,6 @@ export const BitprojectValidation = z.object({
 
         Workdetails: z.string({
             required_error: "Work details are required",
-        }).trim().min(1, "Work details are required").max(200, "Maximum 200 characters allowed"),
+        }).trim().min(1, "Work details are required").max(1000, "Maximum 200 characters allowed"),
     }),
 });

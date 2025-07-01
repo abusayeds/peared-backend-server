@@ -18,8 +18,8 @@ export const projectValidation = z.object({
         workDetails: z.string({ required_error: "Work details are required" })
             .trim()
             .min(1, "Work details are required")
-            .max(200, "Maximum 200 characters allowed"),
-        image : z.string({ required_error: "images is required" }).trim().min(1, "image is required"),
+            .max(1000, "Maximum 200 characters allowed"),
+        image: z.string({ required_error: "images is required" }).trim().min(1, "image is required"),
 
     }),
 
