@@ -8,7 +8,7 @@ const allWithWraw = catchAsync(async (req, res) => {
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: `All withdraw rerquest ! `,
+        message: `All withdraw rerquest  `,
         data: allWithdraReq
     });
 
