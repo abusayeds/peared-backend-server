@@ -29,7 +29,7 @@ app.use(router);
 app.get("/", (req: Request, res: Response) => {
   logger.info("Root endpoint hit");
   const template = `<h1 style="text-align:center">Hello</h1>
-    <h2 style="text-align:center">Welcome to the Server of Abu Sayed </h2>`;
+    <h2 style="text-align:center">Welcome to the peared Server  </h2>`;
   res.status(200).send(template);
 });
 
