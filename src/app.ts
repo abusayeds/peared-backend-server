@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import path from "path";
 // Import the 'express' module
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -7,9 +6,9 @@ import express, { Application, NextFunction, Request, Response } from "express";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import notFound from "./middlewares/notFound";
 
-import router from "./routes";
 import { logger, logHttpRequests } from "./logger/logger";
 import { paymentController } from "./modules/basic_modules/payment/payment.controller";
+import router from "./routes";
 
 
 const app: Application = express();
@@ -28,8 +27,11 @@ app.use(logHttpRequests);
 app.use(router);
 app.get("/", (req: Request, res: Response) => {
   logger.info("Root endpoint hit");
-  const template = `<h1 style="text-align:center">Hello</h1>
-    <h2 style="text-align:center">Welcome to the peared Server  </h2>`;
+  const template = `<h2 style="text-align:center; font-family: 'Merienda', cursive; color: #4caf50; font-size: 40px; padding: 20px; text-shadow: 3px 3px 6px rgba(0,0,0,0.3);">
+  <span style="font-size: 36px; color: #ff5722;">Welcome to the</span><br>
+  <span style="font-size: 50px; color: #ff1744; text-shadow: 3px 3px 8px rgba(0,0,0,0.4);">Peared Server</span>
+</h2>
+    `;
   res.status(200).send(template);
 });
 
