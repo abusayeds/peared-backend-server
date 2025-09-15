@@ -24,6 +24,8 @@ const processWebhookEvent = async (event: any) => {
 async function processPayment(event: any) {
     const session = event.data.object;
     const payment_status = await checkPaymentStatusFromStripe(session.id);
+    console.log(payment_status, 'payment_status');
+
     const projectData = JSON.parse(session.metadata.projectData);
     if (payment_status === 'completed') {
         const customerEmail = session.metadata.customerEmail;
