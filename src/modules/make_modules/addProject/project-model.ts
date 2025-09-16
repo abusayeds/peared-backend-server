@@ -36,6 +36,7 @@ const projectSchema = new Schema<TProject>(
             type: Boolean,
             default: false
         },
+        isComplete: { type: Boolean, default: false },
         expiredDate: {
             type: Date,
             default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)

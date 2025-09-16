@@ -18,5 +18,6 @@ export type TProject = {
     workDetails: string;
     payment: boolean,
     isApprove: boolean,
+    isComplete: boolean
     expiredDate: Date
 } & Document; 

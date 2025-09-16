@@ -4,6 +4,7 @@ import queryBuilder from "../../../builder/queryBuilder"
 import AppError from "../../../errors/AppError"
 import { paymentHistoryModel, PaymentModel } from "../../basic_modules/payment/payment.model"
 import { UserModel } from "../../basic_modules/user/user.model"
+import { TProject } from "../addProject/project-interface"
 import projectModel from "../addProject/project-model"
 import { conversationModel } from "../messages/messages.model"
 import { providerFeedbackModel } from "../providerFeedback/providerModel"
@@ -249,10 +250,12 @@ const ProjectOkByUserDB = async (bitProjectId: string, userId: string,) => {
     if (currentProjects.isComplete !== 'complete') {
         throw new AppError(httpStatus.BAD_REQUEST, 'The project was not completed properly.');
     }
-    const myProjects = await projectModel.findById(currentProjects.projectId);
+    const myProjects = await projectModel.findById(currentProjects.projectId) as TProject;
     if (!myProjects || myProjects.userId.toString() !== userId) {
         throw new AppError(httpStatus.NOT_FOUND, 'Project not found');
     }
+
+    // Update provider's wallet
     const provider = await UserModel.findById(currentProjects.providerId)
     await PaymentModel.findOneAndUpdate(
         { customerEmail: provider.email },
@@ -261,7 +264,8 @@ const ProjectOkByUserDB = async (bitProjectId: string, userId: string,) => {
         },
         { new: true }
     );
-
+    myProjects.isComplete = true;
+    await myProjects.save();
 };
 
 
