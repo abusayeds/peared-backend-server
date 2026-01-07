@@ -121,7 +121,6 @@ const boostProjctDB = async (projectId: string, email: string) => {
     return project
 }
 const allProjectDB = async (query: Record<string, unknown>, user: IUser) => {
-
     if (user.oshaCertificat && user.backgroundCertificat) {
         const projectQuery = new queryBuilder(projectModel.find({ payment: true, oshaCertificate: true, backgroundCertificate: true }), query).search(searchProject).filter().sort()
         const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true, oshaCertificate: true, backgroundCertificate: true }))
@@ -159,7 +158,17 @@ const allProjectDB = async (query: Record<string, unknown>, user: IUser) => {
         });
         return { pagination, project }
     } else {
-        return null
+        const projectQuery = new queryBuilder(projectModel.find({ payment: true, }), query).search(searchProject).filter().sort()
+        const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true, }))
+        const project = await projectQuery.modelQuery.exec()
+        const currentPage = Number(query?.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = projectQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, project }
     }
 
 }
