@@ -10,8 +10,6 @@ export const tokenDecoded = async (req: Request, res: Response) => {
         throw new AppError(httpStatus.UNAUTHORIZED,
             "No token provided or invalid format.",
         );
-
-
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET_KEY as string)

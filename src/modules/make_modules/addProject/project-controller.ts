@@ -9,6 +9,9 @@ import { paymentController } from "../../basic_modules/payment/payment.controlle
 import { paymentHistoryModel, PaymentModel } from "../../basic_modules/payment/payment.model";
 import { UserModel } from "../../basic_modules/user/user.model";
 import { projectService } from "./project-service";
+import queryBuilder from "../../../builder/queryBuilder";
+import projectModel from "./project-model";
+import { searchProject } from "./project-constant";
 
 const createProject = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
@@ -92,6 +95,26 @@ const boostProject = catchAsync(async (req, res) => {
 });
 
 const allProject = catchAsync(async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        const projectQuery = new queryBuilder(projectModel.find({ payment: true, }), req.query).search(searchProject).filter().sort()
+        const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true, }))
+        const project = await projectQuery.modelQuery.exec()
+        const currentPage = Number(req.query?.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const pagination = projectQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        sendResponse(res, {
+            statusCode: httpStatus.OK,
+            success: true,
+            message: ' recived all Project ',
+            data: { pagination, project }
+        });
+        return
+    }
     const { decoded }: any = await tokenDecoded(req, res)
     const allProject = await projectService.allProjectDB(req.query, decoded.user)
     sendResponse(res, {
