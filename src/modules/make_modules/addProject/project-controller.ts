@@ -96,7 +96,11 @@ const boostProject = catchAsync(async (req, res) => {
 
 const allProject = catchAsync(async (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
+    let token: string | null = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+    }
+    if (!token || token === 'null') {
         const projectQuery = new queryBuilder(projectModel.find({ payment: true, }), req.query).search(searchProject).filter().sort()
         const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true, }))
         const project = await projectQuery.modelQuery.exec()
