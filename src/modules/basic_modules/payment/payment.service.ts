@@ -7,6 +7,7 @@ import { withdrawModel } from "../../make_modules/withdraw/withdraw.model";
 import { checkPaymentStatusFromStripe } from "./payment.constant";
 import { stripe } from "./payment.controller";
 import { paymentHistoryModel, PaymentModel } from "./payment.model";
+import { userService } from '../user/user.service';
 
 
 const webhookHandlers: { [key: string]: Function[] } = {
@@ -28,6 +29,8 @@ async function processPayment(event: any) {
 
     const projectData = JSON.parse(session.metadata.projectData);
     if (payment_status === 'completed') {
+        console.log("webhook hit ");
+
         const customerEmail = session.metadata.customerEmail;
         const isExistPayment = await PaymentModel.findOne({ customerEmail });
         if (projectData.role === 'provider') {
@@ -37,7 +40,7 @@ async function processPayment(event: any) {
                 amount: 0,
                 paymentStatus: "completed"
             });
-            joinProvider(event)
+            await joinProvider(event)
         } else if (isExistPayment) {
             await PaymentModel.findOneAndUpdate(
                 { customerEmail }, { $inc: { amount: session.metadata.amount }, }, { new: true }
@@ -90,9 +93,12 @@ async function joinProvider(event: any) {
             balance: session.metadata.amount,
             paymentType: "deposit"
         })
-        await UserModel.findByIdAndUpdate(
+        const res = await UserModel.findByIdAndUpdate(
             projectData.providerId, { verifiedSkillset: true }, { new: true }
         );
+        console.log("id ", projectData.providerId);
+        console.log("check update ", res);
+
         // await userService.joinProviderDB(projectData);
     } catch (error) {
         throw new AppError(400, `${error}`);

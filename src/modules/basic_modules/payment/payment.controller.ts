@@ -48,6 +48,8 @@ const webhookController = async (req: Request, res: Response) => {
       throw new Error("Webhook Secret Key Missing!");
     }
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    console.log(event);
+
     await webhookService.processWebhookEvent(event);
 
   } catch (err: any) {
