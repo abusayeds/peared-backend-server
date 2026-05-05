@@ -174,7 +174,6 @@ const allProjectDB = async (query: Record<string, unknown>, user: IUser) => {
 }
 const singleProjectDB = async (projectId: string) => {
     const SingleProject = await projectModel.findById(projectId)
-
     return SingleProject
 }
 const updateProjectDB = async (payload: TProject, projectId: string) => {

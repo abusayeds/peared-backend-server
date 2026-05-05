@@ -95,12 +95,6 @@ const boostProject = catchAsync(async (req, res) => {
 });
 
 const allProject = catchAsync(async (req, res) => {
-    const authHeader = req.headers.authorization;
-    let token: string | null = null;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.split(' ')[1];
-    }
-    if (!token || token === 'null') {
         const projectQuery = new queryBuilder(projectModel.find({ payment: true, }), req.query).search(searchProject).filter().sort()
         const { totalData } = await projectQuery.paginate(projectModel.find({ payment: true, }))
         const project = await projectQuery.modelQuery.exec()
@@ -117,16 +111,6 @@ const allProject = catchAsync(async (req, res) => {
             message: ' recived all Project ',
             data: { pagination, project }
         });
-        return
-    }
-    const { decoded }: any = await tokenDecoded(req, res)
-    const allProject = await projectService.allProjectDB(req.query, decoded.user)
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: ' recived all Project ',
-        data: allProject
-    });
 });
 const singleProject = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
@@ -175,5 +159,4 @@ export const projectController = {
     allProject,
     singleProject,
     updateProject
-
 }
