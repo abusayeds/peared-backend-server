@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NODE_ENV = exports.STRIPE_SECRET_KEY = exports.STRIPE_WEBHOOK_SECRET = exports.max_file_size = exports.UPLOAD_FOLDER = exports.Nodemailer_GMAIL_PASSWORD = exports.Nodemailer_GMAIL = exports.JWT_SECRET_KEY = exports.DATABASE_URL = exports.PORT = void 0;
+exports.NODE_ENV = exports.STRIPE_SECRET_KEY = exports.STRIPE_WEBHOOK_SECRET = exports.max_file_size = exports.CLOUDINARY_API_SECRET = exports.CLOUDINARY_API_KEY = exports.CLOUDINARY_CLOUD_NAME = exports.UPLOAD_FOLDER = exports.Nodemailer_GMAIL_PASSWORD = exports.Nodemailer_GMAIL = exports.JWT_SECRET_KEY = exports.DATABASE_URL = exports.PORT = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 dotenv_1.default.config({ path: path_1.default.join((process.cwd(), ".env")) });
@@ -13,6 +13,9 @@ exports.JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 exports.Nodemailer_GMAIL = process.env.Nodemailer_GMAIL;
 exports.Nodemailer_GMAIL_PASSWORD = process.env.Nodemailer_GMAIL_PASSWORD;
 exports.UPLOAD_FOLDER = process.env.UPLOAD_FOLDER;
+exports.CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+exports.CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
+exports.CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
 exports.max_file_size = Number(process.env.max_file_size);
 exports.STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 exports.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
