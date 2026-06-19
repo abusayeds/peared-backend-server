@@ -1,26 +1,45 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.upload = void 0;
+exports.uploadSingle = void 0;
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const http_errors_1 = __importDefault(require("http-errors"));
 const config_1 = require("../config");
-const UPLOAD_PATH = config_1.UPLOAD_FOLDER || "public/images";
+const cloudinary_1 = require("../utils/cloudinary");
 const MAX_FILE_SIZE = Number(config_1.max_file_size) || 5 * 1024 * 1024;
-const ALLOWED_FILE_TYPES = [".jpg", ".jpeg", ".png", ".xlsx", ".xls", ".csv", ".pdf", ".doc", ".docx", ".mp3", ".wav", ".ogg", ".mp4", ".avi", ".mov", ".mkv", ".webm", ".svg", "jfif",
+const ALLOWED_FILE_TYPES = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".xlsx",
+    ".xls",
+    ".csv",
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".mp3",
+    ".wav",
+    ".ogg",
+    ".mp4",
+    ".avi",
+    ".mov",
+    ".mkv",
+    ".webm",
+    ".svg",
+    "jfif",
 ];
-const storage = multer_1.default.diskStorage({
-    destination: function (req, file, cb) { cb(null, UPLOAD_PATH); },
-    filename: function (req, file, cb) {
-        const extName = path_1.default.extname(file.originalname);
-        const fileName = `${Date.now()}-${file.originalname.replace(extName, "")}${extName}`;
-        req.body.image = `/images/${fileName}`;
-        cb(null, fileName);
-    },
-});
 const fileFilter = (req, file, cb) => {
     const extName = path_1.default.extname(file.originalname).toLocaleLowerCase();
     const isAllowedFileType = ALLOWED_FILE_TYPES.includes(extName);
@@ -29,10 +48,26 @@ const fileFilter = (req, file, cb) => {
     }
     cb(null, true);
 };
-exports.upload = (0, multer_1.default)({
-    storage,
+const multerUpload = (0, multer_1.default)({
+    storage: multer_1.default.memoryStorage(),
     fileFilter,
     limits: {
         fileSize: MAX_FILE_SIZE,
     },
 });
+const cloudinaryUploadSingle = (req, _res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (req.file) {
+            req.body.image = yield (0, cloudinary_1.uploadToCloudinary)(req.file, "peared/images");
+        }
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
+});
+const uploadSingle = (fieldName) => [
+    multerUpload.single(fieldName),
+    cloudinaryUploadSingle,
+];
+exports.uploadSingle = uploadSingle;

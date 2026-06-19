@@ -12,7 +12,7 @@ const zodValidationHandler_1 = __importDefault(require("../../../middlewares/zod
 const role_1 = require("../../../utils/role");
 const project_validation_1 = require("./project-validation");
 const router = express_1.default.Router();
-router.post("/create-project", (0, auth_1.authMiddleware)(role_1.role.user), fileUploadNormal_1.upload.single("image"), (0, zodValidationHandler_1.default)(project_validation_1.projectValidation), project_controller_1.projectController.createProject);
+router.post("/create-project", (0, auth_1.authMiddleware)(role_1.role.user), ...(0, fileUploadNormal_1.uploadSingle)("image"), (0, zodValidationHandler_1.default)(project_validation_1.projectValidation), project_controller_1.projectController.createProject);
 // project 
 router.get("/my-project", (0, auth_1.authMiddleware)(role_1.role.user), project_controller_1.projectController.myProject);
 router.get("/bit-project/:projectId", (0, auth_1.authMiddleware)(role_1.role.user), project_controller_1.projectController.bitProject);
@@ -20,5 +20,5 @@ router.post("/boost-project/:projectId", (0, auth_1.authMiddleware)(role_1.role.
 // provider All project
 router.get("/my-all-project", project_controller_1.projectController.allProject);
 router.get("/single-project/:projectId", (0, auth_1.authMiddleware)(role_1.role.provider, role_1.role.user), project_controller_1.projectController.singleProject);
-router.post("/update-project/:projectId", (0, auth_1.authMiddleware)(role_1.role.user), fileUploadNormal_1.upload.single("image"), project_controller_1.projectController.updateProject);
+router.post("/update-project/:projectId", (0, auth_1.authMiddleware)(role_1.role.user), ...(0, fileUploadNormal_1.uploadSingle)("image"), project_controller_1.projectController.updateProject);
 exports.projectRoutes = router;

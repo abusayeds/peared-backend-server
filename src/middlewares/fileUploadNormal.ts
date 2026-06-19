@@ -1,33 +1,33 @@
 import multer, { FileFilterCallback } from "multer";
 import path from "path";
-import { Express } from "express";
-import { Request } from "express";
+import { Express, NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { max_file_size, UPLOAD_FOLDER } from "../config";
+import { max_file_size } from "../config";
+import { uploadToCloudinary } from "../utils/cloudinary";
 
-
-const UPLOAD_PATH = UPLOAD_FOLDER || "public/images";
 const MAX_FILE_SIZE = Number(max_file_size) || 5 * 1024 * 1024;
 
-const ALLOWED_FILE_TYPES = [".jpg", ".jpeg", ".png", ".xlsx", ".xls", ".csv", ".pdf", ".doc", ".docx", ".mp3", ".wav", ".ogg", ".mp4", ".avi", ".mov", ".mkv", ".webm", ".svg", "jfif",
+const ALLOWED_FILE_TYPES = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".xlsx",
+  ".xls",
+  ".csv",
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".mp3",
+  ".wav",
+  ".ogg",
+  ".mp4",
+  ".avi",
+  ".mov",
+  ".mkv",
+  ".webm",
+  ".svg",
+  "jfif",
 ];
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) { cb(null, UPLOAD_PATH); },
-  filename: function (
-    req: Request,
-    file: Express.Multer.File,
-    cb: (error: Error | null, filename: string) => void,
-  ) {
-    const extName = path.extname(file.originalname);
-    const fileName = `${Date.now()}-${file.originalname.replace(
-      extName,
-      "",
-    )}${extName}`;
-    req.body.image = `/images/${fileName}`;
-    cb(null, fileName);
-  },
-});
 
 const fileFilter = (
   req: Request,
@@ -43,14 +43,30 @@ const fileFilter = (
   cb(null, true);
 };
 
-export const upload = multer({
-  storage,
+const multerUpload = multer({
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: {
     fileSize: MAX_FILE_SIZE,
   },
 });
 
+const cloudinaryUploadSingle = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (req.file) {
+      req.body.image = await uploadToCloudinary(req.file, "peared/images");
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
 
-
-
+export const uploadSingle = (fieldName: string) => [
+  multerUpload.single(fieldName),
+  cloudinaryUploadSingle,
+];

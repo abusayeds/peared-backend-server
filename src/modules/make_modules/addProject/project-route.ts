@@ -2,14 +2,14 @@ import express from "express";
 import { authMiddleware } from "../../../middlewares/auth";
 import { projectController } from "./project-controller";
 
-import { upload } from "../../../middlewares/fileUploadNormal";
+import { uploadSingle } from "../../../middlewares/fileUploadNormal";
 import zodValidation from "../../../middlewares/zodValidationHandler";
 import { role } from "../../../utils/role";
 import { projectValidation } from "./project-validation";
 
 const router = express.Router();
 
-router.post("/create-project", authMiddleware(role.user), upload.single("image"), zodValidation(projectValidation), projectController.createProject);
+router.post("/create-project", authMiddleware(role.user), ...uploadSingle("image"), zodValidation(projectValidation), projectController.createProject);
 
 
 // project 
@@ -19,6 +19,6 @@ router.post("/boost-project/:projectId", authMiddleware(role.user), projectContr
 // provider All project
 router.get("/my-all-project", projectController.allProject);
 router.get("/single-project/:projectId", authMiddleware(role.provider, role.user), projectController.singleProject);
-router.post("/update-project/:projectId", authMiddleware(role.user), upload.single("image"), projectController.updateProject);
+router.post("/update-project/:projectId", authMiddleware(role.user), ...uploadSingle("image"), projectController.updateProject);
 
 export const projectRoutes = router;
