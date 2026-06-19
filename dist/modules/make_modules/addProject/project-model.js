@@ -52,7 +52,11 @@ const projectSchema = new mongoose_1.Schema({
     image: { type: String, required: true },
     projectName: { type: String, required: true, trim: true },
     projectCategory: { type: String, required: true, trim: true },
-    workDetails: { type: String, required: true, maxlength: 200, trim: true },
+    workDetails: {
+        type: String,
+        required: true,
+        trim: true
+    },
     backgroundCertificate: { type: Boolean, required: false, },
     oshaCertificate: { type: Boolean, required: false, },
     payment: {
@@ -63,6 +67,7 @@ const projectSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
+    isComplete: { type: Boolean, default: false },
     expiredDate: {
         type: Date,
         default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)

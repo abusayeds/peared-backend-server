@@ -229,10 +229,13 @@ const ProjectOkByUserDB = (bitProjectId, userId) => __awaiter(void 0, void 0, vo
     if (!myProjects || myProjects.userId.toString() !== userId) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Project not found');
     }
+    // Update provider's wallet
     const provider = yield user_model_1.UserModel.findById(currentProjects.providerId);
     yield payment_model_1.PaymentModel.findOneAndUpdate({ customerEmail: provider.email }, {
         $inc: { amount: currentProjects.price },
     }, { new: true });
+    myProjects.isComplete = true;
+    yield myProjects.save();
 });
 exports.bitProjectService = {
     createBitProject,

@@ -7,7 +7,7 @@ exports.NODE_ENV = exports.STRIPE_SECRET_KEY = exports.STRIPE_WEBHOOK_SECRET = e
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 dotenv_1.default.config({ path: path_1.default.join((process.cwd(), ".env")) });
-exports.PORT = process.env.PORT || 5000;
+exports.PORT = process.env.PORT;
 exports.DATABASE_URL = process.env.DATABASE_URL;
 exports.JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 exports.Nodemailer_GMAIL = process.env.Nodemailer_GMAIL;

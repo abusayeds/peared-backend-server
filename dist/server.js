@@ -18,6 +18,7 @@ const DB_1 = __importDefault(require("./DB"));
 const app_1 = __importDefault(require("./app"));
 const config_1 = require("./config");
 const socket_1 = require("./utils/socket");
+require("dotenv/config");
 const server = http_1.default.createServer(app_1.default);
 (0, socket_1.initSocketIO)(server);
 function main() {
@@ -40,23 +41,25 @@ main().catch((error) => {
     console.error("Unhandled error in main:", error);
     process.exit(1);
 });
-// process.on("unhandledRejection", (err) => {
-//   console.error(`😈 unhandledRejection is detected, shutting down ...`, err);
-//   if (server) {
-//     server.close(() => {
-//       process.exit(1);
-//     });
-//   } else {
-//     process.exit(1);
-//   }
-// });
-// process.on("uncaughtException", (error) => {
-//   console.error(`😈 uncaughtException is detected, shutting down ...`, error);
-//   if (server) {
-//     server.close(() => {
-//       process.exit(1);
-//     });
-//   } else {
-//     process.exit(1);
-//   }
-// });
+process.on("unhandledRejection", (err) => {
+    console.error(`😈 unhandledRejection is detected, shutting down ...`, err);
+    if (server) {
+        server.close(() => {
+            process.exit(1);
+        });
+    }
+    else {
+        process.exit(1);
+    }
+});
+process.on("uncaughtException", (error) => {
+    console.error(`😈 uncaughtException is detected, shutting down ...`, error);
+    if (server) {
+        server.close(() => {
+            process.exit(1);
+        });
+    }
+    else {
+        process.exit(1);
+    }
+});

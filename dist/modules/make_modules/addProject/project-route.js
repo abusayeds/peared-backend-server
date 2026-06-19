@@ -18,7 +18,7 @@ router.get("/my-project", (0, auth_1.authMiddleware)(role_1.role.user), project_
 router.get("/bit-project/:projectId", (0, auth_1.authMiddleware)(role_1.role.user), project_controller_1.projectController.bitProject);
 router.post("/boost-project/:projectId", (0, auth_1.authMiddleware)(role_1.role.user), project_controller_1.projectController.boostProject);
 // provider All project
-router.get("/my-all-project", (0, auth_1.authMiddleware)(role_1.role.provider), project_controller_1.projectController.allProject);
+router.get("/my-all-project", project_controller_1.projectController.allProject);
 router.get("/single-project/:projectId", (0, auth_1.authMiddleware)(role_1.role.provider, role_1.role.user), project_controller_1.projectController.singleProject);
 router.post("/update-project/:projectId", (0, auth_1.authMiddleware)(role_1.role.user), fileUploadNormal_1.upload.single("image"), project_controller_1.projectController.updateProject);
 exports.projectRoutes = router;

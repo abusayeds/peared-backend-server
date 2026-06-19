@@ -35,8 +35,10 @@ function processPayment(event) {
     return __awaiter(this, void 0, void 0, function* () {
         const session = event.data.object;
         const payment_status = yield (0, payment_constant_1.checkPaymentStatusFromStripe)(session.id);
+        console.log(payment_status, 'payment_status');
         const projectData = JSON.parse(session.metadata.projectData);
         if (payment_status === 'completed') {
+            console.log("webhook hit ");
             const customerEmail = session.metadata.customerEmail;
             const isExistPayment = yield payment_model_1.PaymentModel.findOne({ customerEmail });
             if (projectData.role === 'provider') {
@@ -46,7 +48,7 @@ function processPayment(event) {
                     amount: 0,
                     paymentStatus: "completed"
                 });
-                joinProvider(event);
+                yield joinProvider(event);
             }
             else if (isExistPayment) {
                 yield payment_model_1.PaymentModel.findOneAndUpdate({ customerEmail }, { $inc: { amount: session.metadata.amount }, }, { new: true });
@@ -92,7 +94,9 @@ function joinProvider(event) {
                 balance: session.metadata.amount,
                 paymentType: "deposit"
             });
-            yield user_model_1.UserModel.findByIdAndUpdate(projectData.providerId, { verifiedSkillset: true }, { new: true });
+            const res = yield user_model_1.UserModel.findByIdAndUpdate(projectData.providerId, { verifiedSkillset: true }, { new: true });
+            console.log("id ", projectData.providerId);
+            console.log("check update ", res);
             // await userService.joinProviderDB(projectData);
         }
         catch (error) {
