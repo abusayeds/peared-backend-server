@@ -150,7 +150,17 @@ const allProjectDB = (query, user) => __awaiter(void 0, void 0, void 0, function
         return { pagination, project };
     }
     else {
-        return null;
+        const projectQuery = new queryBuilder_1.default(project_model_1.default.find({ payment: true, }), query).search(project_constant_1.searchProject).filter().sort();
+        const { totalData } = yield projectQuery.paginate(project_model_1.default.find({ payment: true, }));
+        const project = yield projectQuery.modelQuery.exec();
+        const currentPage = Number(query === null || query === void 0 ? void 0 : query.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const pagination = projectQuery.calculatePagination({
+            totalData,
+            currentPage,
+            limit,
+        });
+        return { pagination, project };
     }
 });
 const singleProjectDB = (projectId) => __awaiter(void 0, void 0, void 0, function* () {

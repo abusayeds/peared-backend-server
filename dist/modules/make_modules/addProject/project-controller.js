@@ -23,6 +23,9 @@ const payment_controller_1 = require("../../basic_modules/payment/payment.contro
 const payment_model_1 = require("../../basic_modules/payment/payment.model");
 const user_model_1 = require("../../basic_modules/user/user.model");
 const project_service_1 = require("./project-service");
+const queryBuilder_1 = __importDefault(require("../../../builder/queryBuilder"));
+const project_model_1 = __importDefault(require("./project-model"));
+const project_constant_1 = require("./project-constant");
 const createProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
     const userId = decoded.user._id;
@@ -102,13 +105,22 @@ const boostProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
     });
 }));
 const allProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { decoded } = yield (0, decoded_1.tokenDecoded)(req, res);
-    const allProject = yield project_service_1.projectService.allProjectDB(req.query, decoded.user);
+    var _a;
+    const projectQuery = new queryBuilder_1.default(project_model_1.default.find({ payment: true, }), req.query).search(project_constant_1.searchProject).filter().sort();
+    const { totalData } = yield projectQuery.paginate(project_model_1.default.find({ payment: true, }));
+    const project = yield projectQuery.modelQuery.exec();
+    const currentPage = Number((_a = req.query) === null || _a === void 0 ? void 0 : _a.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const pagination = projectQuery.calculatePagination({
+        totalData,
+        currentPage,
+        limit,
+    });
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
         message: ' recived all Project ',
-        data: allProject
+        data: { pagination, project }
     });
 }));
 const singleProject = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

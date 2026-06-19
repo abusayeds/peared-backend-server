@@ -60,6 +60,7 @@ const webhookController = (req, res) => __awaiter(void 0, void 0, void 0, functi
             throw new Error("Webhook Secret Key Missing!");
         }
         event = exports.stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+        console.log(event);
         yield payment_service_1.webhookService.processWebhookEvent(event);
     }
     catch (err) {

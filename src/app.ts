@@ -32,7 +32,7 @@ app.get("/", (req: Request, res: Response) => {
   logger.info("Root endpoint hit");
   const template = `<h2 style="text-align:center; font-family: 'Merienda', cursive; color: #4caf50; font-size: 40px; padding: 20px; text-shadow: 3px 3px 6px rgba(0,0,0,0.3);">
   <span style="font-size: 36px; color: #ff5722;">Welcome to the</span><br>
-  <span style="font-size: 50px; color: #ff1744; text-shadow: 3px 3px 8px rgba(0,0,0,0.4);">Peared Server V2</span>
+  <span style="font-size: 50px; color: #ff1744; text-shadow: 3px 3px 8px rgba(0,0,0,0.4);">Peared Server V1</span>
 </h2>
     `;
   res.status(200).send(template);

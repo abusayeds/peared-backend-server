@@ -15,7 +15,7 @@ exports.projectValidation = zod_1.z.object({
         workDetails: zod_1.z.string({ required_error: "Work details are required" })
             .trim()
             .min(1, "Work details are required")
-            .max(200, "Maximum 200 characters allowed"),
+            .max(1000, "Maximum 200 characters allowed"),
         image: zod_1.z.string({ required_error: "images is required" }).trim().min(1, "image is required"),
     }),
 });
