@@ -4,8 +4,8 @@
   "description": "\"Backed Template\"",
   "main": "index.js",
   "scripts": {
-    "prod": "node ./dist/server.js",
-    "dev": "nodemon src/server.ts",
+    "prod": "node -r ./polyfill.cjs ./dist/server.js",
+    "dev": "nodemon --exec \"node -r ./polyfill.cjs -r ts-node/register src/server.ts\"",
     "build": "tsc",
     "lint": "eslint src --ignore-path .eslintignore --ext .ts",
     "lint:fix": "npx eslint src --fix",

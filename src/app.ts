@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Import the 'express' module
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+dns.setDefaultResultOrder('ipv4first');
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { Application, NextFunction, Request, Response } from "express";
