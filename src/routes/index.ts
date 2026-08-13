@@ -13,6 +13,7 @@ import { adminRoutes } from "../modules/make_modules/admin/admin.route";
 import { withDrawRoutes } from "../modules/make_modules/withdraw/withdraw.route";
 import { conversationRoutes } from "../modules/make_modules/messages/messages.route";
 import { catagoryRoutes } from "../modules/make_modules/addProject/projectCatagory/catagory.route";
+import { catalogRoutes } from "../modules/make_modules/catalog/catalog.route";
 import { contactRoutes } from "../modules/basic_modules/ContactUs/contact-route";
 import { ReportPolicyRoutes } from "../modules/basic_modules/Terms copy/Terms.route";
 import { reportRoute } from "../modules/make_modules/report/report. route";
@@ -29,6 +30,7 @@ router.use("/api/v1/feedback", feedBackRoutes);
 // make modules 
 router.use("/api/v1/project", projectRoutes);
 router.use("/api/v1/catagory", catagoryRoutes);
+router.use("/api/v1/catalog", catalogRoutes);
 router.use("/api/v1/bit", bitProjectRoutes);
 router.use("/api/v1/payment", paymentRoutes);
 router.use("/api/v1/provider", providerFeedRotes);
