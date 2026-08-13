@@ -12,16 +12,29 @@ import notFound from "./middlewares/notFound";
 import { logger, logHttpRequests } from "./logger/logger";
 import { paymentController } from "./modules/basic_modules/payment/payment.controller";
 import router from "./routes";
+import { CLIENT_URLS, NODE_ENV } from "./config";
 
 
 const app: Application = express();
+app.set("trust proxy", 1);
 app.use('/stripe/webhook', express.raw({ type: "application/json" }), paymentController.webhookController);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow non-browser / same-origin tools (no Origin header)
+      if (!origin) return callback(null, true);
+      if (CLIENT_URLS.length === 0) {
+        // Dev / misconfigured: reflect request origin (needed for credentials)
+        return callback(null, true);
+      }
+      if (CLIENT_URLS.includes(origin) || NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   }),
 );

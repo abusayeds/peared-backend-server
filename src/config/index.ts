@@ -14,3 +14,9 @@ export const max_file_size = Number(process.env.max_file_size);
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 export const NODE_ENV = process.env.NODE_ENV;
+
+/** Comma-separated frontend origins, e.g. https://peared.vercel.app,http://localhost:2000 */
+export const CLIENT_URLS = (process.env.CLIENT_URL || process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
