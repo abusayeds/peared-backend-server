@@ -15,7 +15,7 @@ const hendleMongooseValidationError = (
 
 
   );
-  const statusCode = 500
+  const statusCode = 400;
   return {
     statusCode,
     message: errorSoures[0].message,

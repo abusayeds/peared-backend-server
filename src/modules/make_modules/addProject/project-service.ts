@@ -11,7 +11,7 @@ import { searchProject } from "./project-constant";
 import { TProject } from "./project-interface";
 import projectModel from "./project-model";
 
-const createProjectDB = async (payload: TProject, email: string) => {
+const createProjectDB = async (payload: Partial<TProject> | Record<string, unknown>, email: string) => {
   const isWallet = await PaymentModel.findOne({ customerEmail: email });
   if (!isWallet) {
     throw new AppError(httpStatus.PAYMENT_REQUIRED, "Create a wallet account ");
@@ -19,13 +19,6 @@ const createProjectDB = async (payload: TProject, email: string) => {
   if (isWallet.amount < 1) {
     throw new AppError(httpStatus.NOT_EXTENDED, "Insufficient balance ");
   }
-  await PaymentModel.findOneAndUpdate(
-    { sessionId: "admin1234" },
-    {
-      $inc: { amount: -1 },
-    },
-    { new: true }
-  );
   const project = await projectModel.create(payload);
   return project;
 };
@@ -219,20 +212,6 @@ const createDirectedOfferDB = async (payload: {
     ) {
       throw new AppError(httpStatus.FORBIDDEN, "Invalid conversation");
     }
-  }
-
-  const existingPending = await BitProjectModel.findOne({
-    providerId: payload.providerId,
-    isComplete: "pending",
-  }).populate({
-    path: "projectId",
-    match: { userId: payload.userId, isDirected: true },
-  });
-  if (existingPending?.projectId) {
-    throw new AppError(
-      httpStatus.CONFLICT,
-      "You already have a pending offer with this provider"
-    );
   }
 
   const project = await projectModel.create({

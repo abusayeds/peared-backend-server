@@ -11,6 +11,8 @@ import hendleZodError from "../errors/handleZodError";
 import { TErrorSoureces } from "../interface/error";
 
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  // Always log server-side so create-project failures are visible in the terminal
+  console.error("[API Error]", req.method, req.originalUrl, err?.name || "Error", err?.message);
 
   let statusCode = 500;
   let message = err.message || "something is wrong";
@@ -20,7 +22,7 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
       message: err.message,
     },
   ];
-  if (err instanceof ZodError) {
+  if (err instanceof ZodError || err?.name === "ZodError") {
     const simplifliedError = hendleZodError(err);
     statusCode = simplifliedError?.statusCode;
     message = simplifliedError.message;

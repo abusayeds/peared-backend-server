@@ -2,7 +2,9 @@ import multer, { FileFilterCallback } from "multer";
 import path from "path";
 import { Express, NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
+import httpStatus from "http-status";
 import { max_file_size } from "../config";
+import AppError from "../errors/AppError";
 import { uploadToCloudinary } from "../utils/cloudinary";
 
 const MAX_FILE_SIZE = Number(max_file_size) || 5 * 1024 * 1024;
@@ -57,12 +59,18 @@ const cloudinaryUploadSingle = async (
   next: NextFunction,
 ) => {
   try {
+    if (!req.body || typeof req.body !== "object") {
+      req.body = {};
+    }
     if (req.file) {
       req.body.image = await uploadToCloudinary(req.file, "peared/images");
     }
     next();
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    const message =
+      error?.message ||
+      "Image upload failed. Please try again with a JPG/PNG under 5MB.";
+    next(new AppError(httpStatus.BAD_REQUEST, message));
   }
 };
 

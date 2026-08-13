@@ -15,38 +15,88 @@ import { searchProject } from "./project-constant";
 import projectModel from "./project-model";
 import { projectService } from "./project-service";
 
+const normalizeProjectBody = (body: Record<string, any> = {}) => {
+  const asString = (v: unknown) => {
+    if (Array.isArray(v)) return String(v[0] ?? "").trim();
+    if (v == null) return "";
+    return String(v).trim();
+  };
+  const asBool = (v: unknown) =>
+    v === true || v === "true" || v === "on" || v === "1";
+
+  const postCodeRaw = asString(body.postCode);
+  const postCode = postCodeRaw.match(/^\d{5}/)?.[0] || postCodeRaw;
+
+  return {
+    ...body,
+    street: asString(body.street),
+    city: asString(body.city),
+    postCode,
+    locationType: asString(body.locationType),
+    time: asString(body.time),
+    priceRange: asString(body.priceRange),
+    projectName: asString(body.projectName),
+    projectCategory: asString(body.projectCategory),
+    workDetails: asString(body.workDetails),
+    image: asString(body.image),
+    backgroundCertificate: asBool(body.backgroundCertificate),
+    oshaCertificate: asBool(body.oshaCertificate),
+  };
+};
+
 const createProject = catchAsync(async (req, res) => {
   const { decoded }: any = await tokenDecoded(req, res);
   const userId = decoded.user._id;
   const email = decoded.user.email;
   const name = decoded.user.name;
+
   const userWallet: any = await PaymentModel.findOne({ customerEmail: email });
-  const adminWallet: any = await PaymentModel.findOne({
-    sessionId: "admin123",
-  });
-  const projectData = { ...req.body, userId };
+  if (!userWallet) {
+    throw new AppError(httpStatus.PAYMENT_REQUIRED, "Create a wallet account ");
+  }
+  if (userWallet.amount < 1) {
+    throw new AppError(httpStatus.NOT_EXTENDED, "Insufficient balance ");
+  }
+
+  let adminWallet: any = await PaymentModel.findOne({ sessionId: "admin123" });
+  if (!adminWallet) {
+    adminWallet = await PaymentModel.findOne({ customerEmail: "admin@gmail.com" });
+  }
+
+  const projectData = { ...normalizeProjectBody(req.body), userId } as any;
+  if (!projectData.image) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Project image is required");
+  }
+
   const project = await projectService.createProjectDB(projectData, email);
-  const admin = await UserModel.findOne({ role: "admin" });
-  sendNotification({
-    userId: admin._id,
-    message: `${name} create a project !`,
-  });
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Please pay $1 to proceed",
-    data: project,
-  });
+
   userWallet.amount -= 1;
-  adminWallet.amount += 1;
   await userWallet.save();
-  await adminWallet.save();
+  if (adminWallet) {
+    adminWallet.amount += 1;
+    await adminWallet.save();
+  }
   await paymentHistoryModel.create({
     historyName: `${project.projectName} project created.`,
     email: email,
     admin: "admin123",
     balance: 1,
     paymentType: "withdraw",
+  });
+
+  const admin = await UserModel.findOne({ role: "admin" });
+  if (admin?._id) {
+    sendNotification({
+      userId: admin._id,
+      message: `${name} create a project !`,
+    });
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Project created successfully",
+    data: project,
   });
 });
 
