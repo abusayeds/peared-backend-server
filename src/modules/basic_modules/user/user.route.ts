@@ -27,6 +27,9 @@ router.get("/all-user", authMiddleware(role.admin), userController.getAllUsers);
 router.post("/block-user", authMiddleware(role.admin), BlockUser);
 router.delete("/delete", authMiddleware(role.admin, role.provider, role.user), deleteUser);
 
+router.get("/public-providers", userController.publicProviders);
+router.get("/public-provider/:providerId", userController.publicProviderDetails);
+
 // req provider
 router.get("/request-provider", authMiddleware(role.admin), userController.requestProvider);
 router.get("/confirm-provider", authMiddleware(role.admin), userController.confirmProvider);

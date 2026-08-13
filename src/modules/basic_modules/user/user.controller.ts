@@ -38,10 +38,22 @@ const joinProvider = catchAsync(async (req: Request, res: Response) => {
   if (!req.body.service) {
     throw new AppError(httpStatus.BAD_REQUEST, "service is requred")
   } else {
-    req.body.service = req.body.service.split(",")
+    req.body.service = String(req.body.service).split(",").map((s: string) => s.trim()).filter(Boolean)
   }
 
   if (req.body.service.length === 0) throw new AppError(400, "Service is Required")
+
+  if (req.body.education) {
+    req.body.education = String(req.body.education).split(",").map((s: string) => s.trim()).filter(Boolean)
+  }
+
+  // Persist any new service/education names into global catalogs
+  const { catalogService } = await import("../../make_modules/catalog/catalog.service");
+  await Promise.all(req.body.service.map((s: string) => catalogService.findOrCreateServiceDB(s)));
+  if (Array.isArray(req.body.education)) {
+    await Promise.all(req.body.education.map((e: string) => catalogService.findOrCreateEducationDB(e)));
+  }
+
   const providerPayload = { ...req.body, role: "provider" }
   const result = await userService.joinProviderDB(providerPayload)
   sendResponse(res, {
@@ -212,6 +224,20 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
 const updateUser = catchAsync(async (req: Request, res: Response) => {
   const { decoded, }: any = await tokenDecoded(req, res)
   const userId = decoded.user._id;
+
+  if (req.body.service) {
+    const services = String(req.body.service).split(",").map((s: string) => s.trim()).filter(Boolean);
+    req.body.service = services;
+    const { catalogService } = await import("../../make_modules/catalog/catalog.service");
+    await Promise.all(services.map((s: string) => catalogService.findOrCreateServiceDB(s)));
+  }
+  if (req.body.education) {
+    const educations = String(req.body.education).split(",").map((s: string) => s.trim()).filter(Boolean);
+    req.body.education = educations;
+    const { catalogService } = await import("../../make_modules/catalog/catalog.service");
+    await Promise.all(educations.map((e: string) => catalogService.findOrCreateEducationDB(e)));
+  }
+
   const result = await userService.updateUserDB(req.body, userId)
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -273,6 +299,26 @@ const approveProvider = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const publicProviders = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.publicProvidersDB(req.query);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Providers retrieved successfully",
+    data: result,
+  });
+});
+
+const publicProviderDetails = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.publicProviderDetailsDB(req.params.providerId);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Provider profile retrieved successfully",
+    data: result,
+  });
+});
+
 export const userController = {
   registerUser,
   loginUser,
@@ -287,7 +333,9 @@ export const userController = {
   joinProvider,
   requestProvider,
   confirmProvider,
-  approveProvider
+  approveProvider,
+  publicProviders,
+  publicProviderDetails,
 }
 
 

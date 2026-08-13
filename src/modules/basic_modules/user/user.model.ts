@@ -55,6 +55,13 @@ const UserSchema = new Schema<IUser>(
       type: [String], trim: true, required: false,
       default: undefined
     },
+    education: {
+      type: [String], trim: true, required: false,
+      default: [],
+    },
+    bio: {
+      type: String, trim: true, required: false, default: "",
+    },
     isApproved: {
       type: Boolean, required: false, default: undefined
     },

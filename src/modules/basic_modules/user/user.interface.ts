@@ -25,6 +25,8 @@ export interface IUser extends Document {
   accountId?: string
   status: "active" | "blocked";
   service: string[];
+  education: string[];
+  bio?: string;
   isApproved: boolean
   isActive: boolean;
   isDeleted: boolean;
