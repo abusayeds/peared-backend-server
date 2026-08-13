@@ -1,7 +1,6 @@
 import express from "express";
 import { authMiddleware } from "../../../middlewares/auth"; import zodValidation from "../../../middlewares/zodValidationHandler";
 import { role } from "../../../utils/role";
-import { BitprojectValidation } from "./BitProject.validation";
 import { bitController } from "./BitProject.controller";
 import handleFileUpload from "../../../middlewares/pdfFileUpload";
 

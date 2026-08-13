@@ -41,8 +41,8 @@ const createCheckoutSession = (customerEmail, amount, projectData) => __awaiter(
                 quantity: 1,
             }],
         customer_email: customerEmail,
-        success_url: `https://peardup.com/paymentSuccess`,
-        cancel_url: `https://peardup.com/payment-cancel`,
+        success_url: `https://peared-service.vercel.app/paymentSuccess`,
+        cancel_url: `https://peared-service.vercel.app/payment-cancel`,
         metadata: {
             customerEmail,
             amount: amount,
