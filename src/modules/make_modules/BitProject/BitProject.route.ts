@@ -10,6 +10,7 @@ router.post("/create-bit-project", handleFileUpload, authMiddleware(role.provide
 router.get("/single-project/:bitProjectId", authMiddleware(role.user), bitController.singleProject);
 router.get("/confirm-project/:projectId", authMiddleware(role.user, role.provider), bitController.confirmProject);
 router.post("/bit-project-approved/:bitProjectId", authMiddleware(role.user), bitController.bitProjectApproved);
+router.post("/accept-offer/:bitProjectId", authMiddleware(role.provider), bitController.acceptOfferByProvider);
 
 // current-projects
 router.get("/current-projects", authMiddleware(role.provider), bitController.currentProjects)

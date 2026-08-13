@@ -20,4 +20,8 @@ export type TProject = {
     isApprove: boolean,
     isComplete: boolean
     expiredDate: Date
-} & Document; 
+    /** Direct offer to one provider (hidden from open marketplace) */
+    isDirected?: boolean
+    targetProviderId?: Types.ObjectId | null
+    sourceConversationId?: Types.ObjectId | null
+} & Document;

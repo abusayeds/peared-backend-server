@@ -10,6 +10,11 @@ import { projectValidation } from "./project-validation";
 const router = express.Router();
 
 router.post("/create-project", authMiddleware(role.user), ...uploadSingle("image"), zodValidation(projectValidation), projectController.createProject);
+router.post(
+  "/create-offer",
+  authMiddleware(role.user),
+  projectController.createDirectedOffer
+);
 
 
 // project 

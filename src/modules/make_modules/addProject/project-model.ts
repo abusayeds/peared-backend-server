@@ -40,7 +40,20 @@ const projectSchema = new Schema<TProject>(
         expiredDate: {
             type: Date,
             default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        }
+        },
+        isDirected: { type: Boolean, default: false },
+        targetProviderId: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: false,
+            default: null,
+        },
+        sourceConversationId: {
+            type: Schema.Types.ObjectId,
+            ref: "Conversation",
+            required: false,
+            default: null,
+        },
     },
     { timestamps: true }
 );

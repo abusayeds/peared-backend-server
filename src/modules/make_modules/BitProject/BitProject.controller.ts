@@ -3,14 +3,13 @@ import AppError from "../../../errors/AppError";
 import { tokenDecoded } from "../../../middlewares/decoded";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
-import { sendNotification } from "../../../utils/socket";
+import { emitProjectEvent, sendNotification } from "../../../utils/socket";
 import { paymentController } from "../../basic_modules/payment/payment.controller";
 import { UserModel } from "../../basic_modules/user/user.model";
 import projectModel from "../addProject/project-model";
 import { conversationModel } from "../messages/messages.model";
 import BitProjectModel from "./BitProject.model";
 import { bitProjectService } from "./BitProject.service";
-
 
 const createBitProject = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
@@ -47,12 +46,17 @@ const createBitProject = catchAsync(async (req, res) => {
         data: result
     });
     const project: any = await projectModel.findById(result.projectId)
-    const user = await UserModel.findById(project.userId)
-    await sendNotification({
-        userId: user._id,
-        message: `${provider.name} bit your project !`,
+    const ownerId = project?.userId?.toString?.() || project?.userId;
+    emitProjectEvent(ownerId, "bid:created", {
+        bid: result,
+        projectId: result.projectId,
+        providerId: userId,
+        providerName: provider.name,
+        notificationTitle: "New Bid",
+        notificationMessage: `${provider.name} bit your project !`,
     });
 });
+
 const singleProject = catchAsync(async (req, res) => {
     const { bitProjectId } = req.params
     const result = await bitProjectService.singleProjectDB(bitProjectId)
@@ -63,6 +67,7 @@ const singleProject = catchAsync(async (req, res) => {
         data: result
     });
 });
+
 const confirmProject = catchAsync(async (req, res) => {
     const { projectId } = req.params
     const result = await bitProjectService.confirmProjectDB(projectId)
@@ -73,6 +78,7 @@ const confirmProject = catchAsync(async (req, res) => {
         data: result
     });
 });
+
 const bitProjectApproved = catchAsync(async (req, res) => {
     const { bitProjectId } = req.params
     const { decoded }: any = await tokenDecoded(req, res)
@@ -87,20 +93,83 @@ const bitProjectApproved = catchAsync(async (req, res) => {
         message: `project successfullly Approved `,
         data: bitProjectApproved
     });
+
+    let conversationId = null;
     if (bitProjectApproved) {
-        const conversation = new conversationModel({
-            projectId: bitProjectApproved.projectId._id,
-            providerId: bitProjectApproved.providerId,
-            userId: userId
+        const providerId = bitProjectApproved.providerId;
+        const projectId = bitProjectApproved.projectId._id || bitProjectApproved.projectId;
+        let conversation = await conversationModel.findOne({
+            userId,
+            providerId,
+            type: "direct",
         });
-        await conversation.save();
+        if (conversation) {
+            conversation.projectId = projectId;
+            conversation.type = "project";
+            await conversation.save();
+            conversationId = conversation._id;
+        } else {
+            conversation = new conversationModel({
+                projectId,
+                providerId,
+                userId,
+                type: "project",
+            });
+            await conversation.save();
+            conversationId = conversation._id;
+        }
     }
-    await sendNotification({
-        userId: bitProjectApproved.providerId,
-        message: `${name} accept your Bits !`,
+
+    const providerId = bitProjectApproved?.providerId?.toString?.() || bitProjectApproved?.providerId;
+    emitProjectEvent(providerId, "bid:approved", {
+        bitProjectId,
+        projectId: bitProjectApproved?.projectId?._id || bitProjectApproved?.projectId,
+        conversationId,
+        isComplete: "running",
+        notificationTitle: "Bid Approved",
+        notificationMessage: `${name} accept your Bits !`,
+    });
+    emitProjectEvent(userId, "bid:approved", {
+        bitProjectId,
+        projectId: bitProjectApproved?.projectId?._id || bitProjectApproved?.projectId,
+        conversationId,
+        isComplete: "running",
+    });
+});
+
+const acceptOfferByProvider = catchAsync(async (req, res) => {
+    const { bitProjectId } = req.params;
+    const { decoded }: any = await tokenDecoded(req, res);
+    const providerId = decoded.user._id;
+    const name = decoded.user.name;
+    const result = await bitProjectService.acceptOfferByProviderDB(
+        bitProjectId,
+        providerId
+    );
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Offer accepted",
+        data: result,
     });
 
+    emitProjectEvent(result.ownerId, "bid:approved", {
+        bitProjectId,
+        projectId: result.project._id,
+        conversationId: result.conversationId,
+        isComplete: "running",
+        notificationTitle: "Offer accepted",
+        notificationMessage: `${name} accepted your offer. Project is now active.`,
+    });
+    emitProjectEvent(providerId, "bid:approved", {
+        bitProjectId,
+        projectId: result.project._id,
+        conversationId: result.conversationId,
+        isComplete: "running",
+    });
 });
+
 const currentProjects = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const providerId = decoded.user._id;
@@ -111,8 +180,8 @@ const currentProjects = catchAsync(async (req, res) => {
         message: `Current Projects Retrieve `,
         data: currentBitProjects
     });
-
 });
+
 const pendingsBits = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const providerId = decoded.user._id;
@@ -124,10 +193,12 @@ const pendingsBits = catchAsync(async (req, res) => {
         data: pendingBitProjects
     });
 });
+
 const ProjectOkByProvider = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const { bitProjectId } = req.params
     const providerId = decoded.user._id;
+    const name = decoded.user.name;
     const projectOk = await bitProjectService.ProjectOkByProviderDB(bitProjectId, providerId)
     sendResponse(res, {
         statusCode: httpStatus.OK,
@@ -136,12 +207,23 @@ const ProjectOkByProvider = catchAsync(async (req, res) => {
         data: projectOk
     });
 
+    const project: any = await projectModel.findById(projectOk.projectId);
+    const ownerId = project?.userId?.toString?.() || project?.userId;
+    emitProjectEvent(ownerId, "project:providerDone", {
+        bitProjectId,
+        projectId: projectOk.projectId,
+        isComplete: "complete",
+        notificationTitle: "Work Done Request",
+        notificationMessage: `${name} marked the project as done. Please review.`,
+    });
 });
+
 const ProjectOkByUser = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const { bitProjectId } = req.params
     const userId = decoded.user._id;
-    const email = decoded.user.email;
+    const name = decoded.user.name;
+    const bit = await BitProjectModel.findById(bitProjectId);
     const projectOk = await bitProjectService.ProjectOkByUserDB(bitProjectId, userId)
     sendResponse(res, {
         statusCode: httpStatus.OK,
@@ -150,11 +232,22 @@ const ProjectOkByUser = catchAsync(async (req, res) => {
         data: projectOk
     });
 
+    const providerId = bit?.providerId ? String(bit.providerId) : undefined;
+    emitProjectEvent(providerId, "project:userOk", {
+        bitProjectId,
+        projectId: bit?.projectId,
+        isComplete: "finished",
+        notificationTitle: "Project Accepted",
+        notificationMessage: `${name} confirmed your work is done.`,
+    });
 });
+
 const ProjectNotOk = catchAsync(async (req, res) => {
     const { decoded }: any = await tokenDecoded(req, res)
     const { bitProjectId } = req.params
     const userId = decoded.user._id;
+    const name = decoded.user.name;
+    const bit = await BitProjectModel.findById(bitProjectId);
     const projectOk = await bitProjectService.ProjectNotOkDB(bitProjectId, userId)
     sendResponse(res, {
         statusCode: httpStatus.OK,
@@ -163,23 +256,21 @@ const ProjectNotOk = catchAsync(async (req, res) => {
         data: projectOk
     });
 
+    const providerId = bit?.providerId ? String(bit.providerId) : undefined;
+    emitProjectEvent(providerId, "project:userNotOk", {
+        bitProjectId,
+        projectId: bit?.projectId,
+        isComplete: "running",
+        notificationTitle: "Work Not Accepted",
+        notificationMessage: `${name} rejected the done request. Please continue working.`,
+    });
 });
-
-
-
-
-
-
-
-
-
-
-
 
 export const bitController = {
     createBitProject,
     singleProject,
     bitProjectApproved,
+    acceptOfferByProvider,
     currentProjects,
     pendingsBits,
     ProjectOkByProvider,
