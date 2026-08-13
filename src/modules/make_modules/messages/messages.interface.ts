@@ -1,7 +1,8 @@
 import { Types } from "mongoose";
 
 export type TConversation = {
-    projectId: Types.ObjectId;
-    providerId: Types.ObjectId;
-}
- 
+  projectId?: Types.ObjectId;
+  providerId: Types.ObjectId;
+  userId: Types.ObjectId;
+  type: "direct" | "project";
+};
