@@ -11,10 +11,20 @@ router.get(
   authMiddleware(role.user, role.provider),
   messageController.getInbox
 );
+router.get(
+  "/unread-count",
+  authMiddleware(role.user, role.provider),
+  messageController.getUnreadCount
+);
 router.post(
   "/start-direct",
   authMiddleware(role.user),
   messageController.startDirect
+);
+router.post(
+  "/mark-read/:conversationId",
+  authMiddleware(role.user, role.provider),
+  messageController.markRead
 );
 router.get(
   "/meta/:conversationId",

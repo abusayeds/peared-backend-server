@@ -1,9 +1,15 @@
-import mongoose, { model, Schema, Types } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 import { TConversation } from "./messages.interface";
 
+/** One chat thread per user ↔ provider pair (never duplicate). */
 const ConversationSchema = new Schema(
   {
-    projectId: { type: Types.ObjectId, required: false, ref: "Project", default: null },
+    projectId: {
+      type: Types.ObjectId,
+      required: false,
+      ref: "Project",
+      default: null,
+    },
     providerId: { type: Types.ObjectId, required: true, ref: "User" },
     userId: { type: Types.ObjectId, required: true, ref: "User" },
     type: {
@@ -11,17 +17,13 @@ const ConversationSchema = new Schema(
       enum: ["direct", "project"],
       default: "direct",
     },
+    userLastReadAt: { type: Date, default: null },
+    providerLastReadAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
-ConversationSchema.index(
-  { userId: 1, providerId: 1, type: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { type: "direct" },
-  }
-);
+ConversationSchema.index({ userId: 1, providerId: 1 }, { unique: true });
 
 export const conversationModel = mongoose.model<TConversation>(
   "Conversation",

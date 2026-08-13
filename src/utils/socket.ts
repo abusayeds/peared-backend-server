@@ -93,6 +93,9 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
             messageText: messageText.trim(),
           });
           await message.save();
+          await conversationModel.findByIdAndUpdate(conversationId, {
+            updatedAt: new Date(),
+          });
           io.to(roomId).emit("receiveMessage", message);
           // stop typing for sender after send
           socket.to(roomId).emit("typing", {
@@ -112,6 +115,24 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
           const isFromProvider = String(senderId) === providerId;
           const targetId = isFromProvider ? clientId : providerId;
           const senderDoc = isFromProvider ? conversation.providerId : conversation.userId;
+
+          // Unread for recipient
+          const targetRole = isFromProvider ? "user" : "provider";
+          const lastRead =
+            targetRole === "provider"
+              ? conversation.providerLastReadAt
+              : conversation.userLastReadAt;
+          const unreadFilter: any = {
+            conversationId,
+            senderId: { $ne: String(targetId) },
+          };
+          if (lastRead) unreadFilter.createdAt = { $gt: lastRead };
+          const threadUnread = await messageModel.countDocuments(unreadFilter);
+
+          emitToUser(targetId, "inbox:unread", {
+            conversationId: roomId,
+            threadUnread,
+          });
 
           const notif = {
             userId: targetId,

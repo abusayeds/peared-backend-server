@@ -149,7 +149,6 @@ const confirmProjectDB = async (projectId: string) => {
     conversation = await conversationModel.findOne({
       providerId: currentProjects.providerId,
       userId: currentProjects.projectId.userId,
-      type: "direct",
     });
   }
   return {
@@ -366,24 +365,31 @@ const acceptOfferByProviderDB = async (
     conversation = await conversationModel.findOne({
       userId: project.userId,
       providerId,
-      type: "direct",
     });
+  }
+  if (!conversation) {
+    try {
+      conversation = await conversationModel.create({
+        projectId: project._id,
+        providerId,
+        userId: project.userId,
+        type: "direct",
+      });
+    } catch {
+      conversation = await conversationModel.findOne({
+        userId: project.userId,
+        providerId,
+      });
+    }
   }
   if (conversation) {
     conversation.projectId = project._id;
-    conversation.type = "project";
+    conversation.type = "direct";
     await conversation.save();
     await messageModel.create({
       conversationId: conversation._id,
       senderId: String(providerId),
       messageText: `✅ Offer accepted for $${bitProject.price}. Project is now active — continue here.`,
-    });
-  } else {
-    conversation = await conversationModel.create({
-      projectId: project._id,
-      providerId,
-      userId: project.userId,
-      type: "project",
     });
   }
 

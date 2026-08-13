@@ -3,7 +3,6 @@ import { tokenDecoded } from "../../../middlewares/decoded";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
 import { emitProjectEvent } from "../../../utils/socket";
-import { UserModel } from "../../basic_modules/user/user.model";
 import { messageservice } from "./messages.service";
 
 const getConversation = catchAsync(async (req, res) => {
@@ -27,7 +26,6 @@ const startDirect = catchAsync(async (req, res) => {
   const { providerId } = req.body;
   const conversation = await messageservice.startDirectDB(userId, providerId);
 
-  const provider = await UserModel.findById(providerId).select("name");
   emitProjectEvent(providerId, "chat:direct", {
     conversationId: conversation?._id,
     userId,
@@ -63,7 +61,8 @@ const getConversationMeta = catchAsync(async (req, res) => {
   const { conversationId } = req.params;
   const result = await messageservice.getConversationMetaDB(
     conversationId,
-    decoded.user._id
+    decoded.user._id,
+    decoded.user.role
   );
 
   sendResponse(res, {
@@ -74,9 +73,43 @@ const getConversationMeta = catchAsync(async (req, res) => {
   });
 });
 
+const markRead = catchAsync(async (req, res) => {
+  const { decoded }: any = await tokenDecoded(req, res);
+  const { conversationId } = req.params;
+  const result = await messageservice.markReadDB(
+    conversationId,
+    decoded.user._id,
+    decoded.user.role
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Marked as read",
+    data: result,
+  });
+});
+
+const getUnreadCount = catchAsync(async (req, res) => {
+  const { decoded }: any = await tokenDecoded(req, res);
+  const totalUnread = await messageservice.getTotalUnreadDB(
+    decoded.user._id,
+    decoded.user.role
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Unread count",
+    data: { totalUnread },
+  });
+});
+
 export const messageController = {
   getConversation,
   startDirect,
   getInbox,
   getConversationMeta,
+  markRead,
+  getUnreadCount,
 };

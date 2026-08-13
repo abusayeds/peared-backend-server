@@ -101,23 +101,19 @@ const bitProjectApproved = catchAsync(async (req, res) => {
         let conversation = await conversationModel.findOne({
             userId,
             providerId,
-            type: "direct",
         });
-        if (conversation) {
-            conversation.projectId = projectId;
-            conversation.type = "project";
-            await conversation.save();
-            conversationId = conversation._id;
-        } else {
-            conversation = new conversationModel({
+        if (!conversation) {
+            conversation = await conversationModel.create({
                 projectId,
                 providerId,
                 userId,
-                type: "project",
+                type: "direct",
             });
+        } else {
+            conversation.projectId = projectId;
             await conversation.save();
-            conversationId = conversation._id;
         }
+        conversationId = conversation._id;
     }
 
     const providerId = bitProjectApproved?.providerId?.toString?.() || bitProjectApproved?.providerId;
