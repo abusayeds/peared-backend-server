@@ -1,0 +1,5 @@
+{
+  "watch": ["src", "polyfill.cjs"],
+  "ext": "ts,js,json,cjs",
+  "ignore": ["src/**/*.spec.ts", "dist"]
+}

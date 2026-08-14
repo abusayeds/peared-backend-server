@@ -17,6 +17,7 @@ import { catalogRoutes } from "../modules/make_modules/catalog/catalog.route";
 import { contactRoutes } from "../modules/basic_modules/ContactUs/contact-route";
 import { ReportPolicyRoutes } from "../modules/basic_modules/Terms copy/Terms.route";
 import { reportRoute } from "../modules/make_modules/report/report. route";
+import { pmRoutes } from "../modules/make_modules/projectManage/pm.route";
 
 
 const router = express.Router();
@@ -42,6 +43,7 @@ router.use("/api/v1/chat", conversationRoutes);
 router.use("/api/v1/contact", contactRoutes);
 // report 
 router.use("/api/v1/report", reportRoute);
+router.use("/api/v1/pm", pmRoutes);
 // report 
 
 

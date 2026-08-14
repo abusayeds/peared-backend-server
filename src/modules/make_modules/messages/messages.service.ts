@@ -37,23 +37,35 @@ const relatedProjectsForPair = async (userId: any, providerId: any) => {
       path: "projectId",
       match: { userId },
       select:
-        "projectName projectCategory isDirected isApprove isComplete createdAt",
+        "projectName projectCategory isDirected isApprove isComplete createdAt image street city postCode workDetails",
     })
     .sort({ createdAt: -1 })
     .lean();
 
   return bits
-    .filter((b: any) => b.projectId)
+    .filter(
+      (b: any) =>
+        b.projectId &&
+        b.isComplete !== "finished" &&
+        !b.projectId.isComplete
+    )
     .map((b: any) => ({
       bitId: b._id,
       projectId: b.projectId._id,
       projectName: b.projectId.projectName,
       projectCategory: b.projectId.projectCategory,
+      image: b.projectId.image,
+      street: b.projectId.street,
+      city: b.projectId.city,
+      postCode: b.projectId.postCode,
+      workDetails: b.projectId.workDetails || b.Workdetails,
       isDirected: !!b.projectId.isDirected,
       isApprove: !!b.projectId.isApprove,
       projectComplete: !!b.projectId.isComplete,
       status: b.isComplete,
       price: b.price,
+      serviceTime: b.serviceTime,
+      startTime: b.startTime,
     }));
 };
 
