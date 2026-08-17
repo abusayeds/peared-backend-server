@@ -1,4 +1,4 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export type IPendingUser = {
   email: string;
@@ -29,6 +29,8 @@ export interface IUser extends Document {
   bio?: string;
   isApproved: boolean
   isActive: boolean;
+  lastSeen?: Date;
+  blockedUsers?: Types.ObjectId[];
   isDeleted: boolean;
 }
 

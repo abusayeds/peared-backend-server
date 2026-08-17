@@ -105,6 +105,34 @@ const getUnreadCount = catchAsync(async (req, res) => {
   });
 });
 
+const blockUser = catchAsync(async (req, res) => {
+  const { decoded }: any = await tokenDecoded(req, res);
+  const result = await messageservice.blockUserDB(
+    decoded.user._id,
+    req.params.userId
+  );
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "User blocked",
+    data: result,
+  });
+});
+
+const unblockUser = catchAsync(async (req, res) => {
+  const { decoded }: any = await tokenDecoded(req, res);
+  const result = await messageservice.unblockUserDB(
+    decoded.user._id,
+    req.params.userId
+  );
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "User unblocked",
+    data: result,
+  });
+});
+
 export const messageController = {
   getConversation,
   startDirect,
@@ -112,4 +140,6 @@ export const messageController = {
   getConversationMeta,
   markRead,
   getUnreadCount,
+  blockUser,
+  unblockUser,
 };

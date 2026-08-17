@@ -8,3 +8,12 @@ export type TConversation = {
   userLastReadAt?: Date | null;
   providerLastReadAt?: Date | null;
 };
+
+export type TMessage = {
+  conversationId: Types.ObjectId;
+  senderId: string;
+  messageText: string;
+  type?: "text" | "call";
+  callStatus?: "completed" | "missed" | "rejected" | "cancelled";
+  durationSeconds?: number;
+};

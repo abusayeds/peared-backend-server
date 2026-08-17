@@ -5,6 +5,8 @@ import { socketTokenDecoded } from "../middlewares/decoded";
 import { NotificationModel } from "../modules/basic_modules/notifications/notification.model";
 import { setUserInactive, updateUserActivity } from "../modules/basic_modules/user/user.service";
 import { conversationModel, messageModel } from "../modules/make_modules/messages/messages.model";
+import { getBlockState } from "./block";
+import { attachCallHandlers } from "./call.socket";
 
 export let io: SocketIOServer;
 const socketMap: Map<string, Socket> = new Map();
@@ -39,16 +41,30 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
   io.on("connection", async (socket: Socket) => {
     const token = socket.handshake.query.token;
     const { decoded }: any = await socketTokenDecoded(token);
-    if (decoded?.user) {
-      const userId = decoded.user._id?.toString?.() || String(decoded.user._id);
-      console.log("A user connected:", decoded?.user?.email);
-      socketMap.set(userId, socket);
-      updateUserActivity(decoded?.user?._id);
-    } else {
+    if (!decoded?.user) {
       console.log("User not authenticated, disconnecting...");
       socket.disconnect();
       return;
     }
+    const userId = decoded.user._id?.toString?.() || String(decoded.user._id);
+    console.log("A user connected:", decoded?.user?.email);
+    socketMap.set(userId, socket);
+    updateUserActivity(decoded?.user?._id);
+    io.emit("active-inactive", {
+      _id: decoded?.user?._id,
+      userId,
+      isActive: true,
+      lastSeen: new Date(),
+    });
+    attachCallHandlers({
+      socket,
+      io,
+      userId,
+      userName: decoded.user.name || "",
+      userImage: decoded.user.image,
+      socketMap,
+      emitToUser,
+    });
 
     try {
       socket.on("joinConversation", (data) => {
@@ -58,8 +74,8 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
         socket.join(roomId);
         conversationModel
           .findById(conversationId)
-          .populate({ path: "providerId", select: "isActive name image" })
-          .populate({ path: "userId", select: "isActive name image" })
+          .populate({ path: "providerId", select: "isActive name image lastSeen" })
+          .populate({ path: "userId", select: "isActive name image lastSeen" })
           .then((res: any) => {
             if (!res) return;
             if (decoded.user.role === "provider") {
@@ -83,26 +99,11 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       });
 
       socket.on("sendMessage", async (data) => {
-        const { conversationId, senderId, messageText } = data;
+        const { conversationId, messageText } = data;
+        const senderId = userId;
         try {
           if (!conversationId || !messageText?.trim()) return;
           const roomId = String(conversationId);
-          const message = new messageModel({
-            conversationId,
-            senderId,
-            messageText: messageText.trim(),
-          });
-          await message.save();
-          await conversationModel.findByIdAndUpdate(conversationId, {
-            updatedAt: new Date(),
-          });
-          io.to(roomId).emit("receiveMessage", message);
-          // stop typing for sender after send
-          socket.to(roomId).emit("typing", {
-            conversationId: roomId,
-            userId: senderId,
-            isTyping: false,
-          });
 
           const conversation = (await conversationModel
             .findById(conversationId)
@@ -112,11 +113,34 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
 
           const providerId = conversation.providerId?._id?.toString();
           const clientId = conversation.userId?._id?.toString();
-          const isFromProvider = String(senderId) === providerId;
-          const targetId = isFromProvider ? clientId : providerId;
-          const senderDoc = isFromProvider ? conversation.providerId : conversation.userId;
+          if (senderId !== providerId && senderId !== clientId) return;
 
-          // Unread for recipient
+          const targetId = senderId === providerId ? clientId : providerId;
+          const block = await getBlockState(senderId, targetId);
+          if (block.isBlocked) {
+            socket.emit("message:error", { message: "You can't message this user" });
+            return;
+          }
+
+          const message = new messageModel({
+            conversationId,
+            senderId,
+            messageText: messageText.trim(),
+            type: "text",
+          });
+          await message.save();
+          await conversationModel.findByIdAndUpdate(conversationId, {
+            updatedAt: new Date(),
+          });
+          io.to(roomId).emit("receiveMessage", message);
+          socket.to(roomId).emit("typing", {
+            conversationId: roomId,
+            userId: senderId,
+            isTyping: false,
+          });
+
+          const isFromProvider = senderId === providerId;
+          const senderDoc = isFromProvider ? conversation.providerId : conversation.userId;
           const targetRole = isFromProvider ? "user" : "provider";
           const lastRead =
             targetRole === "provider"
@@ -167,7 +191,12 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
         }
         setUserInactive(decoded?.user?._id);
         console.log(decoded?.user?.email, "just disconnected");
-        io.emit("active-inactive", { _id: decoded?.user?._id, userId: decoded?.user?._id, isActive: false });
+        io.emit("active-inactive", {
+          _id: decoded?.user?._id,
+          userId: decoded?.user?._id,
+          isActive: false,
+          lastSeen: new Date(),
+        });
       }
     });
   });

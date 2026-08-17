@@ -36,5 +36,15 @@ router.get(
   authMiddleware(role.user, role.provider),
   messageController.getConversation
 );
+router.post(
+  "/block/:userId",
+  authMiddleware(role.user, role.provider),
+  messageController.blockUser
+);
+router.delete(
+  "/block/:userId",
+  authMiddleware(role.user, role.provider),
+  messageController.unblockUser
+);
 
 export const conversationRoutes = router;

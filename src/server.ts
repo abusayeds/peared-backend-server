@@ -14,7 +14,7 @@ async function main() {
     await mongoose.connect(DATABASE_URL as string,);
     console.log("mongodb connected successfully");
     await seedSuperAdmin();
-    server.listen(PORT, () => {
+    server.listen(Number(PORT) || 2004, "0.0.0.0", () => {
       console.log(`Server is running on ${PORT}`);
     });
     

@@ -1,9 +1,13 @@
 import httpStatus from "http-status";
+import { Types } from "mongoose";
 import queryBuilder from "../../../builder/queryBuilder";
 import AppError from "../../../errors/AppError";
+import { getBlockState } from "../../../utils/block";
 import { UserModel } from "../../basic_modules/user/user.model";
 import BitProjectModel from "../BitProject/BitProject.model";
 import { conversationModel, messageModel } from "./messages.model";
+
+const PEER_SELECT = "name image isActive lastSeen city updatedAt";
 
 const peerKey = (userId: any, providerId: any) =>
   `${String(userId)}:${String(providerId)}`;
@@ -123,8 +127,8 @@ const startDirectDB = async (userId: string, providerId: string) => {
 
   return conversationModel
     .findById(conversation._id)
-    .populate({ path: "providerId", select: "name image isActive city" })
-    .populate({ path: "userId", select: "name image isActive city" });
+    .populate({ path: "providerId", select: PEER_SELECT })
+    .populate({ path: "userId", select: PEER_SELECT });
 };
 
 const getInboxDB = async (authUserId: string, role: string) => {
@@ -136,8 +140,8 @@ const getInboxDB = async (authUserId: string, role: string) => {
   const conversations = await conversationModel
     .find(filter)
     .sort({ updatedAt: -1 })
-    .populate({ path: "providerId", select: "name image isActive city" })
-    .populate({ path: "userId", select: "name image isActive city" })
+    .populate({ path: "providerId", select: PEER_SELECT })
+    .populate({ path: "userId", select: PEER_SELECT })
     .lean();
 
   // Deduplicate: one row per peer pair (keep most recently updated)
@@ -196,8 +200,8 @@ const getConversationMetaDB = async (
 ) => {
   const conversation: any = await conversationModel
     .findById(conversationId)
-    .populate({ path: "providerId", select: "name image isActive city" })
-    .populate({ path: "userId", select: "name image isActive city" });
+    .populate({ path: "providerId", select: PEER_SELECT })
+    .populate({ path: "userId", select: PEER_SELECT });
 
   if (!conversation) {
     throw new AppError(httpStatus.NOT_FOUND, "Conversation not found");
@@ -231,12 +235,18 @@ const getConversationMetaDB = async (
     conversation
   );
 
+  const peerId = String(authUserId) === uid ? pid : uid;
+  const block = await getBlockState(String(authUserId), peerId);
+
   return {
     conversation,
     projects,
     pendingOffers: pendingOffers.filter((o: any) => o.projectId),
     pendingOffer: pendingOffers.find((o: any) => o.projectId) || null,
     unreadCount,
+    blockedByMe: block.blockedByMe,
+    blockedByPeer: block.blockedByPeer,
+    isBlocked: block.isBlocked,
   };
 };
 
@@ -306,6 +316,27 @@ const ensureThreadDB = async (userId: string, providerId: string) => {
   return conversation;
 };
 
+const blockUserDB = async (authUserId: string, targetUserId: string) => {
+  if (String(authUserId) === String(targetUserId)) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Cannot block yourself");
+  }
+  const target = await UserModel.findById(targetUserId).select("_id");
+  if (!target) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+  await UserModel.findByIdAndUpdate(authUserId, {
+    $addToSet: { blockedUsers: new Types.ObjectId(String(targetUserId)) },
+  });
+  return getBlockState(String(authUserId), String(targetUserId));
+};
+
+const unblockUserDB = async (authUserId: string, targetUserId: string) => {
+  await UserModel.findByIdAndUpdate(authUserId, {
+    $pull: { blockedUsers: new Types.ObjectId(String(targetUserId)) },
+  });
+  return getBlockState(String(authUserId), String(targetUserId));
+};
+
 export const messageservice = {
   getConversationDB,
   startDirectDB,
@@ -314,4 +345,6 @@ export const messageservice = {
   markReadDB,
   getTotalUnreadDB,
   ensureThreadDB,
+  blockUserDB,
+  unblockUserDB,
 };

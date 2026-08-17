@@ -39,6 +39,17 @@ const messageSchema = new mongoose.Schema(
     },
     senderId: { type: String, required: true },
     messageText: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ["text", "call"],
+      default: "text",
+    },
+    callStatus: {
+      type: String,
+      enum: ["completed", "missed", "rejected", "cancelled"],
+      required: false,
+    },
+    durationSeconds: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

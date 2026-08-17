@@ -307,19 +307,23 @@ const approveProviderDB = async (payload: any) => {
 export const updateUserActivity = async (userId: string) => {
   try {
     await UserModel.findByIdAndUpdate(
-      userId, { isActive: true, }, { new: true }
+      userId,
+      { isActive: true, lastSeen: new Date() },
+      { new: true }
     );
   } catch (error) {
-    console.error('Error updating user activity:', error);
+    console.error("Error updating user activity:", error);
   }
 };
 export const setUserInactive = async (userId: string) => {
   try {
     await UserModel.findByIdAndUpdate(
-      userId, { isActive: false, }, { new: true }
+      userId,
+      { isActive: false, lastSeen: new Date() },
+      { new: true }
     );
   } catch (error) {
-    console.error('Error setting user inactive:', error);
+    console.error("Error setting user inactive:", error);
   }
 };
 

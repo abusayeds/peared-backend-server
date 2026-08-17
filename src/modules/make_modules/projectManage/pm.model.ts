@@ -21,13 +21,13 @@ const PmManagedSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Project",
       required: true,
-      unique: true,
       index: true,
     },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
   },
   { timestamps: true }
 );
+PmManagedSchema.index({ projectId: 1, createdBy: 1 }, { unique: true });
 
 const PmProjectSchema = new Schema(
   {
@@ -50,6 +50,7 @@ const PmProjectSchema = new Schema(
 const PmTaskSchema = new Schema(
   {
     projectId: { type: Schema.Types.ObjectId, ref: "PmProject", required: true, index: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, default: "", trim: true },
     priority: { type: String, enum: ["Low", "Medium", "High"], default: "Medium" },
@@ -65,6 +66,7 @@ const PmTaskSchema = new Schema(
 const PmBugSchema = new Schema(
   {
     projectId: { type: Schema.Types.ObjectId, ref: "PmProject", required: true, index: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, default: "", trim: true },
     priority: { type: String, enum: ["Low", "Medium", "High"], default: "Medium" },
@@ -77,6 +79,7 @@ const PmBugSchema = new Schema(
 const PmMilestoneSchema = new Schema(
   {
     projectId: { type: Schema.Types.ObjectId, ref: "PmProject", required: true, index: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     name: { type: String, required: true, trim: true },
     startDate: { type: Date, default: null },
     endDate: { type: Date, default: null },
@@ -90,6 +93,7 @@ const PmMilestoneSchema = new Schema(
 const PmAttachmentSchema = new Schema(
   {
     projectId: { type: Schema.Types.ObjectId, ref: "PmProject", required: true, index: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     name: { type: String, required: true, trim: true },
     url: { type: String, required: true },
     uploadedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -100,6 +104,7 @@ const PmAttachmentSchema = new Schema(
 const PmActivitySchema = new Schema(
   {
     projectId: { type: Schema.Types.ObjectId, ref: "PmProject", required: true, index: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     message: { type: String, required: true, trim: true },
   },

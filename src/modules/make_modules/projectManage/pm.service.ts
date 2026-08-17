@@ -34,6 +34,17 @@ const DEFAULT_BUG_STAGES = [
 
 const asId = (v: any) => String(v);
 
+let pmIndexesReady = false;
+const ensurePmIndexes = async () => {
+  if (pmIndexesReady) return;
+  try {
+    await PmManagedModel.collection.dropIndex("projectId_1");
+  } catch {
+    /* old unique index may already be gone */
+  }
+  pmIndexesReady = true;
+};
+
 const uniquePosted = (rows: any[]) => {
   const seen = new Set<string>();
   return rows.filter((p: any) => {
@@ -60,7 +71,10 @@ const guardAccess = async (user: any, projectId: any) => {
 
 const guardPosted = async (user: any, projectId: any) => {
   const access = await guardAccess(user, projectId);
-  const managed = await PmManagedModel.findOne({ projectId });
+  const managed = await PmManagedModel.findOne({
+    projectId,
+    createdBy: user._id,
+  });
   if (!managed) {
     throw new AppError(
       httpStatus.NOT_FOUND,
@@ -81,7 +95,7 @@ export const ensureDefaultStages = async (ownerId: string) => {
 };
 
 const logActivity = async (projectId: any, userId: any, message: string) => {
-  await PmActivityModel.create({ projectId, userId, message });
+  await PmActivityModel.create({ projectId, ownerId: userId, userId, message });
 };
 
 const daysLeft = (deadline?: Date) => {
@@ -149,10 +163,10 @@ const shapePosted = (
   };
 };
 
-const computeProgress = async (projectIds: string[]) => {
+const computeProgress = async (projectIds: string[], ownerId: any) => {
   const [tasks, doneStages] = await Promise.all([
-    PmTaskModel.find({ projectId: { $in: projectIds } }).select("projectId stageId"),
-    PmStageModel.find({ isDone: true }).select("_id"),
+    PmTaskModel.find({ projectId: { $in: projectIds }, ownerId }).select("projectId stageId"),
+    PmStageModel.find({ ownerId, isDone: true }).select("_id"),
   ]);
   const doneSet = new Set(doneStages.map((s) => asId(s._id)));
   const map: Record<string, { total: number; done: number }> = {};
@@ -223,7 +237,7 @@ const enrichPosted = async (user: any, posted: any[]) => {
   const ownerMap: Record<string, any> = {};
   for (const o of owners) ownerMap[asId(o._id)] = o;
 
-  const progressMap = await computeProgress(ids.map(asId));
+  const progressMap = await computeProgress(ids.map(asId), user._id);
   return posted.map((p) => {
     const bits = bitsByProject[asId(p._id)] || [];
     const assigned = bits
@@ -250,9 +264,8 @@ const enrichPosted = async (user: any, posted: any[]) => {
 };
 
 const listProjects = async (user: any, query: Record<string, any>) => {
-  if (user.role !== "provider") {
-    await ensureDefaultStages(user._id);
-  }
+  await ensurePmIndexes();
+  await ensureDefaultStages(user._id);
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(48, Math.max(1, Number(query.limit) || 12));
   const status = query.status as string | undefined;
@@ -260,6 +273,7 @@ const listProjects = async (user: any, query: Record<string, any>) => {
 
   const accessible = await loadAccessiblePosted(user);
   const managed = await PmManagedModel.find({
+    createdBy: user._id,
     projectId: { $in: accessible.map((p) => p._id) },
   })
     .select("projectId")
@@ -301,8 +315,10 @@ const listProjects = async (user: any, query: Record<string, any>) => {
 };
 
 const listEligible = async (user: any) => {
+  await ensurePmIndexes();
   const posted = await loadAccessiblePosted(user, { inProgressOnly: true });
   const managed = await PmManagedModel.find({
+    createdBy: user._id,
     projectId: { $in: posted.map((p) => p._id) },
   })
     .select("projectId")
@@ -317,7 +333,7 @@ const createProject = async (user: any, payload: any) => {
   if (!projectId) {
     throw new AppError(httpStatus.BAD_REQUEST, "Select an in-progress project");
   }
-  const { project, bits, ownerId } = await guardAccess(user, projectId);
+  const { project, bits } = await guardAccess(user, projectId);
   const uid = asId(user._id);
   const inProgress =
     project.isComplete !== true &&
@@ -335,18 +351,24 @@ const createProject = async (user: any, payload: any) => {
     );
   }
 
-  const existing = await PmManagedModel.findOne({ projectId });
+  const existing = await PmManagedModel.findOne({
+    projectId,
+    createdBy: user._id,
+  });
   if (!existing) {
     await PmManagedModel.create({ projectId, createdBy: user._id });
-    await ensureDefaultStages(ownerId);
+    await ensureDefaultStages(user._id);
     await logActivity(projectId, user._id, "added this project to Project Manage");
   }
   return { _id: String(projectId), projectId };
 };
 
 const getProject = async (user: any, projectId: string) => {
-  const { project, bits, isOwner, ownerId } = await guardPosted(user, projectId);
-  await ensureDefaultStages(ownerId);
+  const { project, bits, isOwner: isListingOwner, ownerId } = await guardPosted(
+    user,
+    projectId
+  );
+  await ensureDefaultStages(user._id);
   const owner = await UserModel.findById(ownerId).select(PM_PERSON_SELECT).lean();
   const assigned = await UserModel.find({
     _id: {
@@ -356,26 +378,27 @@ const getProject = async (user: any, projectId: string) => {
     },
   }).select(PM_PERSON_SELECT);
 
+  const scope = { projectId, ownerId: user._id };
   const [tasks, bugs, milestones, attachments, activities, taskStages, bugStages] =
     await Promise.all([
-      PmTaskModel.find({ projectId })
+      PmTaskModel.find(scope)
         .populate("assignees", PM_PERSON_SELECT)
         .populate("stageId")
         .sort({ createdAt: -1 }),
-      PmBugModel.find({ projectId })
+      PmBugModel.find(scope)
         .populate("assignees", PM_PERSON_SELECT)
         .populate("stageId")
         .sort({ createdAt: -1 }),
-      PmMilestoneModel.find({ projectId }).sort({ createdAt: -1 }),
-      PmAttachmentModel.find({ projectId })
+      PmMilestoneModel.find(scope).sort({ createdAt: -1 }),
+      PmAttachmentModel.find(scope)
         .populate("uploadedBy", PM_PERSON_SELECT)
         .sort({ createdAt: -1 }),
-      PmActivityModel.find({ projectId })
+      PmActivityModel.find(scope)
         .populate("userId", PM_PERSON_SELECT)
         .sort({ createdAt: -1 })
         .limit(50),
-      PmStageModel.find({ ownerId, type: "task" }).sort({ order: 1 }),
-      PmStageModel.find({ ownerId, type: "bug" }).sort({ order: 1 }),
+      PmStageModel.find({ ownerId: user._id, type: "task" }).sort({ order: 1 }),
+      PmStageModel.find({ ownerId: user._id, type: "bug" }).sort({ order: 1 }),
     ]);
 
   const doneStageIds = new Set(
@@ -418,7 +441,8 @@ const getProject = async (user: any, projectId: string) => {
       milestoneTotal: milestones.length,
       chart: Object.entries(chartMonths).map(([month, count]) => ({ month, count })),
     },
-    isOwner,
+    isOwner: true,
+    isListingOwner,
   };
 };
 
@@ -431,33 +455,26 @@ const updateProject = async (_user: any, _projectId: string, _payload: any) => {
 
 const deleteProject = async (user: any, projectId: string) => {
   await guardPosted(user, projectId);
+  const scope = { projectId, ownerId: user._id };
   await Promise.all([
-    PmManagedModel.deleteOne({ projectId }),
-    PmTaskModel.deleteMany({ projectId }),
-    PmBugModel.deleteMany({ projectId }),
-    PmMilestoneModel.deleteMany({ projectId }),
-    PmAttachmentModel.deleteMany({ projectId }),
-    PmActivityModel.deleteMany({ projectId }),
+    PmManagedModel.deleteOne({ projectId, createdBy: user._id }),
+    PmTaskModel.deleteMany(scope),
+    PmBugModel.deleteMany(scope),
+    PmMilestoneModel.deleteMany(scope),
+    PmAttachmentModel.deleteMany(scope),
+    PmActivityModel.deleteMany(scope),
   ]);
   return { deleted: true };
 };
 
-const listStages = async (user: any, type: string, projectId?: string) => {
-  let ownerId = asId(user._id);
-  if (projectId) {
-    const guarded = await guardPosted(user, projectId);
-    ownerId = guarded.ownerId;
-  }
-  await ensureDefaultStages(ownerId);
-  const filter: any = { ownerId };
+const listStages = async (user: any, type: string) => {
+  await ensureDefaultStages(user._id);
+  const filter: any = { ownerId: user._id };
   if (type === "task" || type === "bug") filter.type = type;
   return PmStageModel.find(filter).sort({ type: 1, order: 1 });
 };
 
 const createStage = async (user: any, payload: any) => {
-  if (user.role === "provider") {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Only clients can edit stages");
-  }
   await ensureDefaultStages(user._id);
   const type = payload.type === "bug" ? "bug" : "task";
   const last = await PmStageModel.findOne({ ownerId: user._id, type }).sort({ order: -1 });
@@ -487,9 +504,6 @@ const updateStage = async (user: any, stageId: string, payload: any) => {
 };
 
 const reorderStages = async (user: any, ids: string[]) => {
-  if (user.role === "provider") {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Only clients can edit stages");
-  }
   await Promise.all(
     (ids || []).map((id, index) =>
       PmStageModel.updateOne({ _id: id, ownerId: user._id }, { order: index })
@@ -518,21 +532,27 @@ const deleteStage = async (user: any, stageId: string) => {
     _id: { $ne: stage._id },
   }).sort({ order: 1 });
   if (stage.type === "task") {
-    await PmTaskModel.updateMany({ stageId: stage._id }, { stageId: fallback!._id });
+    await PmTaskModel.updateMany(
+      { stageId: stage._id, ownerId: user._id },
+      { stageId: fallback!._id }
+    );
   } else {
-    await PmBugModel.updateMany({ stageId: stage._id }, { stageId: fallback!._id });
+    await PmBugModel.updateMany(
+      { stageId: stage._id, ownerId: user._id },
+      { stageId: fallback!._id }
+    );
   }
   await PmStageModel.findByIdAndDelete(stageId);
   return { deleted: true };
 };
 
 const createTask = async (user: any, projectId: string, payload: any) => {
-  const { ownerId } = await guardPosted(user, projectId);
-  await ensureDefaultStages(ownerId);
+  await guardPosted(user, projectId);
+  await ensureDefaultStages(user._id);
   let stageId = payload.stageId;
   if (!stageId) {
     const first = await PmStageModel.findOne({
-      ownerId,
+      ownerId: user._id,
       type: "task",
     }).sort({ order: 1 });
     stageId = first?._id;
@@ -540,6 +560,7 @@ const createTask = async (user: any, projectId: string, payload: any) => {
   if (!payload.title?.trim()) throw new AppError(httpStatus.BAD_REQUEST, "Title is required");
   const task = await PmTaskModel.create({
     projectId,
+    ownerId: user._id,
     title: payload.title.trim(),
     description: payload.description || "",
     priority: payload.priority || "Medium",
@@ -558,6 +579,9 @@ const createTask = async (user: any, projectId: string, payload: any) => {
 const updateTask = async (user: any, taskId: string, payload: any) => {
   const task = await PmTaskModel.findById(taskId);
   if (!task) throw new AppError(httpStatus.NOT_FOUND, "Task not found");
+  if (asId(task.ownerId) !== asId(user._id)) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized access");
+  }
   await guardPosted(user, task.projectId);
   const allowed = [
     "title",
@@ -582,6 +606,9 @@ const updateTask = async (user: any, taskId: string, payload: any) => {
 const deleteTask = async (user: any, taskId: string) => {
   const task = await PmTaskModel.findById(taskId);
   if (!task) throw new AppError(httpStatus.NOT_FOUND, "Task not found");
+  if (asId(task.ownerId) !== asId(user._id)) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized access");
+  }
   await guardPosted(user, task.projectId);
   await PmTaskModel.findByIdAndDelete(taskId);
   await logActivity(task.projectId, user._id, `deleted task "${task.title}"`);
@@ -589,12 +616,12 @@ const deleteTask = async (user: any, taskId: string) => {
 };
 
 const createBug = async (user: any, projectId: string, payload: any) => {
-  const { ownerId } = await guardPosted(user, projectId);
-  await ensureDefaultStages(ownerId);
+  await guardPosted(user, projectId);
+  await ensureDefaultStages(user._id);
   let stageId = payload.stageId;
   if (!stageId) {
     const first = await PmStageModel.findOne({
-      ownerId,
+      ownerId: user._id,
       type: "bug",
     }).sort({ order: 1 });
     stageId = first?._id;
@@ -602,6 +629,7 @@ const createBug = async (user: any, projectId: string, payload: any) => {
   if (!payload.title?.trim()) throw new AppError(httpStatus.BAD_REQUEST, "Title is required");
   const bug = await PmBugModel.create({
     projectId,
+    ownerId: user._id,
     title: payload.title.trim(),
     description: payload.description || "",
     priority: payload.priority || "Medium",
@@ -617,6 +645,9 @@ const createBug = async (user: any, projectId: string, payload: any) => {
 const updateBug = async (user: any, bugId: string, payload: any) => {
   const bug = await PmBugModel.findById(bugId);
   if (!bug) throw new AppError(httpStatus.NOT_FOUND, "Bug not found");
+  if (asId(bug.ownerId) !== asId(user._id)) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized access");
+  }
   await guardPosted(user, bug.projectId);
   const allowed = ["title", "description", "priority", "stageId", "assignees"];
   for (const key of allowed) {
@@ -632,6 +663,9 @@ const updateBug = async (user: any, bugId: string, payload: any) => {
 const deleteBug = async (user: any, bugId: string) => {
   const bug = await PmBugModel.findById(bugId);
   if (!bug) throw new AppError(httpStatus.NOT_FOUND, "Bug not found");
+  if (asId(bug.ownerId) !== asId(user._id)) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized access");
+  }
   await guardPosted(user, bug.projectId);
   await PmBugModel.findByIdAndDelete(bugId);
   await logActivity(bug.projectId, user._id, `deleted bug "${bug.title}"`);
@@ -643,6 +677,7 @@ const createMilestone = async (user: any, projectId: string, payload: any) => {
   if (!payload.name?.trim()) throw new AppError(httpStatus.BAD_REQUEST, "Name is required");
   const milestone = await PmMilestoneModel.create({
     projectId,
+    ownerId: user._id,
     name: payload.name.trim(),
     startDate: payload.startDate || null,
     endDate: payload.endDate || null,
@@ -657,6 +692,9 @@ const createMilestone = async (user: any, projectId: string, payload: any) => {
 const updateMilestone = async (user: any, id: string, payload: any) => {
   const item = await PmMilestoneModel.findById(id);
   if (!item) throw new AppError(httpStatus.NOT_FOUND, "Milestone not found");
+  if (asId(item.ownerId) !== asId(user._id)) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized access");
+  }
   await guardPosted(user, item.projectId);
   const allowed = ["name", "startDate", "endDate", "cost", "progress", "status"];
   for (const key of allowed) {
@@ -669,6 +707,9 @@ const updateMilestone = async (user: any, id: string, payload: any) => {
 const deleteMilestone = async (user: any, id: string) => {
   const item = await PmMilestoneModel.findById(id);
   if (!item) throw new AppError(httpStatus.NOT_FOUND, "Milestone not found");
+  if (asId(item.ownerId) !== asId(user._id)) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized access");
+  }
   await guardPosted(user, item.projectId);
   await PmMilestoneModel.findByIdAndDelete(id);
   return { deleted: true };
@@ -679,6 +720,7 @@ const addAttachment = async (user: any, projectId: string, payload: any) => {
   if (!payload.url) throw new AppError(httpStatus.BAD_REQUEST, "File is required");
   const doc = await PmAttachmentModel.create({
     projectId,
+    ownerId: user._id,
     name: payload.name || "Attachment",
     url: payload.url,
     uploadedBy: user._id,
@@ -690,6 +732,9 @@ const addAttachment = async (user: any, projectId: string, payload: any) => {
 const deleteAttachment = async (user: any, id: string) => {
   const item = await PmAttachmentModel.findById(id);
   if (!item) throw new AppError(httpStatus.NOT_FOUND, "Attachment not found");
+  if (asId(item.ownerId) !== asId(user._id)) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized access");
+  }
   await guardPosted(user, item.projectId);
   await PmAttachmentModel.findByIdAndDelete(id);
   return { deleted: true };

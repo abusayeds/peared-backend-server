@@ -90,8 +90,7 @@ const listStages = catchAsync(async (req, res) => {
   const user = await actor(req, res);
   const result = await pmService.listStages(
     user,
-    String(req.query.type || ""),
-    req.query.projectId ? String(req.query.projectId) : undefined
+    String(req.query.type || "")
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,

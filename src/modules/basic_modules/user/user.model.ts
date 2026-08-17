@@ -73,6 +73,14 @@ const UserSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    lastSeen: {
+      type: Date,
+      default: null,
+    },
+    blockedUsers: {
+      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
   },
   { timestamps: true }
 );
